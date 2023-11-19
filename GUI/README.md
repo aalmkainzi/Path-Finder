@@ -4,7 +4,7 @@ A graphical program for visualizing the path finding algorithm
 **Requires OpenGL**
 ## Building
 To build the project you need either:
-* Any C compiler on Linux (tested on GCC)
+* Any C compiler on Linux (tested with GCC)
 * MinGW on Windows
 
 Steps to build on Linux:
