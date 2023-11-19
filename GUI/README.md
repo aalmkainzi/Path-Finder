@@ -25,3 +25,5 @@ Steps t build on Windows:
 * Clicking the E button or the E on the grid will let you relocate the end point
 * Scrolling on the Rows spinner or clicking the arrow buttons will increase/decrease the rows
 * Scrolling on the Cols spinner or clicking the arrow buttons will increase/decrease the cols
+* Pressing - will zoom out
+* Pressing = will zoom in
