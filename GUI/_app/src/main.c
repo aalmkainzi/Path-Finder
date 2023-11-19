@@ -111,10 +111,10 @@ int main()
     Rectangle buttons_panel;
     
     // loading the style
-    GuiLoadStyle("style_bluish.rgs");
+    GuiLoadStyle("../../style_bluish.rgs");
     
     // loading the icons
-    GuiLoadIcons("iconset.rgi", false);
+    GuiLoadIcons("../../iconset.rgi", false);
     GuiSetIconScale(3);
     
     Font font_big = GuiGetFont();
