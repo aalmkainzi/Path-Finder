@@ -28,6 +28,9 @@ void resize_obstacles(bool ***obstacles, int cols, int rows);
 // returns a heap allocated 1D array from an array of bool arrays
 bool *obstacles_2d_to_1d(bool **obstacles);
 
+// clamps a float between 2 values
+int iclampf(float f, int min, int max);
+
 // a convinence macro used to clear the path (free and NULL it, set cost string to empty)
 #define clear_path() \
 do { \
@@ -334,9 +337,23 @@ int main()
         // setting the font for rows/cols spinners
         GuiSetFont(GetFontDefault());
         
+        // drawing the spinners and updating the rows/cols
         int old_rows = rows, old_cols = cols;
         GuiSpinner(r_spinner, "Rows  ", &rows, 1, INT_MAX, false);
         GuiSpinner(c_spinner, "Cols  ", &cols, 1, INT_MAX, false);
+        
+        // if mouse is hovering over spinner and scrolls up/down, the value should change
+        int mousex = GetMouseX();
+        int mousey = GetMouseY();
+        
+        float spinner_scroll = GetMouseWheelMoveV().y;
+        if(mousex >= r_spinner.x && mousex <= r_spinner.x + r_spinner.width)
+            if(mousey >= r_spinner.y && mousey <= r_spinner.y + r_spinner.height)
+                rows += iclampf(spinner_scroll, -1, 1);
+        
+        if(mousex >= c_spinner.x && mousex <= c_spinner.x + c_spinner.width)
+            if(mousey >= c_spinner.y && mousey <= c_spinner.y + c_spinner.height)
+                cols += iclampf(spinner_scroll, -1, 1);
         
         // resize the obstacles grid if rows/cols was changed
         if(old_rows != rows || old_cols != cols)
@@ -571,4 +588,9 @@ bool *obstacles_2d_to_1d(bool **obstacles)
     }
     
     return ret;
+}
+
+int iclampf(float f, int min, int max)
+{
+    return f > max ? max : (f < min ? min : f);
 }
