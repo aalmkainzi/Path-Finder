@@ -87,8 +87,8 @@ check_raylib();
 
 include ("raylib_premake5.lua")
 
-if(os.isdir("game")) then
-    include ("game")
+if(os.isdir("_app")) then
+    include ("_app")
 end
 
 folders = os.matchdirs("*")
