@@ -40,13 +40,22 @@ do { \
 } while(0)
 
 // a convinence macro for selecting a mode
-#define set_select(mode) \
+#define set_select_mode(mode) \
 do { \
-    Loc *_locs[3] = {&(Loc){}, &start, &end}; \
+    _Static_assert(mode != NO_SELECT, "set_select_mode must be either START or END"); \
+    HideCursor(); \
+    Loc *_locs[2] = {&start, &end}; \
     select_mode = mode; \
-    *_locs[mode] = null_loc; \
+    *_locs[mode - 1] = null_loc; \
     clear_path(); \
 } while(0)
+
+// a convinence macro for unselecting
+#define no_select() \
+do { \
+    select_mode = NO_SELECT; \
+    ShowCursor(); \
+} while(0);
 
 const int line_thickness = 2;
 int cell_size = 128;
@@ -297,7 +306,7 @@ int main()
         if(clear_clicked)
         {
             // if Start/End is selected, unselect
-            select_mode = NO_SELECT;
+            no_select();
             
             // remove all obstacles
             for(int i = 0 ; i < rows ; i++)
@@ -314,18 +323,18 @@ int main()
         
         if(start_clicked)
         {
-            set_select(START);
+            set_select_mode(START);
         }
         
         if(end_clicked)
         {
-            set_select(END);
+            set_select_mode(END);
         }
         
         // if path button was clicked and the Start and End are set, execute the shortest_path algorithm
         if(find_clicked && within_grid(start, cols, rows) && within_grid(end, cols, rows))
         {
-            select_mode = NO_SELECT;
+            no_select();
             bool *obstacles1d = obstacles_2d_to_1d(obstacles);
             free(path);
             path = shortest_path(obstacles1d, cols, rows, start, end);
@@ -396,18 +405,17 @@ int main()
                 {
                     if(locs_eq(clicked_cell.loc, start) && !clicked_cell.held)
                     {
-                        set_select(START);
+                        set_select_mode(START);
                     }
                     if(locs_eq(clicked_cell.loc, end) && !clicked_cell.held)
                     {
-                        set_select(END);
+                        set_select_mode(END);
                     }
                 }
                 break;
             case START:
                 // turn cursor into an S
-                HideCursor();
-                GuiDrawIcon(220, GetMouseX() - 2, GetMouseY() - (cursor_icon_size / 2) - (2 * cursor_icon_size), cursor_icon_size, BLACK);
+                GuiDrawIcon(220, GetMouseX() - (2 * cursor_icon_size), GetMouseY() - (2 * cursor_icon_size), cursor_icon_size, BLACK);
                 
                 // since we're in S cursor mode, clicking on a passable cell will put the Start point there
                 if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x])
@@ -420,14 +428,13 @@ int main()
                         end = null_loc;
                     
                     // make cursor normal next frame, and clear path if it was drawn (since the grid was changed, the path might not apply anymore)
-                    select_mode = NO_SELECT;
+                    no_select();
                     clear_path();
                 }
                 break;
             case END:
                 // turn cursor into an E
-                HideCursor();
-                GuiDrawIcon(221, GetMouseX() - 2, GetMouseY() - (cursor_icon_size / 2) - (2 * cursor_icon_size), cursor_icon_size, BLACK);
+                GuiDrawIcon(221, GetMouseX() - (2 *cursor_icon_size), GetMouseY() - (2 * cursor_icon_size), cursor_icon_size, BLACK);
                 
                 // since we're in E cursor mode, clicking on a passable cell will put the End point there
                 if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x])
@@ -440,7 +447,7 @@ int main()
                         start = null_loc;
                     
                     // make cursor normal next frame, and clear path if it was drawn (since the grid was changed, the path might not apply anymore)
-                    select_mode = NO_SELECT;
+                    no_select();
                     clear_path();
                 }
                 break;
