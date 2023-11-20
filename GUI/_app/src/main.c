@@ -28,7 +28,7 @@ void resize_obstacles(bool ***obstacles, int cols, int rows);
 // returns a heap allocated 1D array from an array of bool arrays
 bool *obstacles_2d_to_1d(bool **obstacles);
 
-// clamps a float between 2 values
+// clamps a float between 2 int values
 int iclampf(float f, int min, int max);
 
 // a convinence macro used to clear the path (free and NULL it, set cost string to empty)
@@ -120,8 +120,9 @@ int main()
     GuiLoadIcons("../../iconset.rgi", false);
     GuiSetIconScale(3);
     
-    Font font_big = GuiGetFont();
-    font_big.baseSize = 5;
+    Font font = GuiGetFont();
+    int font_size_small = 7;
+    int font_size_big = 5;
     
     while(!WindowShouldClose())
     {
@@ -178,14 +179,6 @@ int main()
             .x = s_button.x,
             .y = x_button.y - button_pad - button_size,
             .width  = button_size,
-            .height = button_size
-        };
-        
-        // setting the cost text bounds rectangle
-        Rectangle cost_label = {
-            .x = (buttons_panel.width/2) - (MeasureTextEx(font_big, cost_str, font_big.baseSize, 1).x),
-            .y = x_button.y - button_pad - 9,
-            .width  = buttons_panel.width,
             .height = button_size
         };
         
@@ -283,8 +276,17 @@ int main()
         GuiDrawRectangle(buttons_panel, 1, WHITE, WHITE);
         
         // setting the font for the cost string
-        GuiSetFont(font_big);
-        GuiLabel(cost_label, cost_str);
+        font.baseSize = font_size_big;
+        GuiSetFont(font);
+        
+        // setting the cost text bounds rectangle
+        Rectangle cost_label_bounds = {
+            .x = (buttons_panel.width/2) - (MeasureTextEx(font, cost_str, font.baseSize, 1).x),
+            .y = x_button.y - button_pad - 9,
+            .width  = buttons_panel.width,
+            .height = button_size
+        };
+        GuiLabel(cost_label_bounds, cost_str);
         
         // get whether any of the buttons was clicked
         bool find_clicked  = GuiButton(p_button, "#73#");
@@ -335,18 +337,19 @@ int main()
         }
         
         // setting the font for rows/cols spinners
-        GuiSetFont(GetFontDefault());
+        font.baseSize = font_size_small;
+        GuiSetFont(font);
         
         // drawing the spinners and updating the rows/cols
         int old_rows = rows, old_cols = cols;
-        GuiSpinner(r_spinner, "Rows  ", &rows, 1, INT_MAX, false);
-        GuiSpinner(c_spinner, "Cols  ", &cols, 1, INT_MAX, false);
+        GuiSpinner(r_spinner, "Rows ", &rows, 1, INT_MAX, false);
+        GuiSpinner(c_spinner, "Cols ", &cols, 1, INT_MAX, false);
         
         // if mouse is hovering over spinner and scrolls up/down, the value should change
         int mousex = GetMouseX();
         int mousey = GetMouseY();
-        
         float spinner_scroll = GetMouseWheelMoveV().y;
+        
         if(mousex >= r_spinner.x && mousex <= r_spinner.x + r_spinner.width)
             if(mousey >= r_spinner.y && mousey <= r_spinner.y + r_spinner.height)
                 rows += iclampf(spinner_scroll, -1, 1);
