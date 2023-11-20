@@ -42,7 +42,7 @@ do { \
 // a convinence macro for selecting a mode
 #define set_select_mode(mode) \
 do { \
-    _Static_assert(mode != NO_SELECT, "set_select_mode must be either START or END"); \
+    _Static_assert(mode == START || mode == END, "set_select_mode must be either START or END"); \
     HideCursor(); \
     Loc *_locs[2] = {&start, &end}; \
     select_mode = mode; \
