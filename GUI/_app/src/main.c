@@ -54,7 +54,7 @@ do { \
     cost_str[0] = '\0'; \
 } while(0)
 
-// a convinence macro for selecting a mode
+// a convinence macro for setting a select mode
 #define set_select_mode(mode) \
 do { \
     _Static_assert(mode == START || mode == END, "set_select_mode must be either START or END"); \
