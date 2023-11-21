@@ -64,8 +64,8 @@ workspace (workspaceName)
         symbols "On"
 
     filter "configurations:Release"
-        defines { "NDEBUG" }
-        optimize "On"
+        optimize "Speed"
+        flags { "LinkTimeOptimization", "C11" }
 
     filter { "platforms:x64" }
         architecture "x86_64"
