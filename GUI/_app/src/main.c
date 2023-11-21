@@ -140,6 +140,7 @@ int main()
     InitWindow(1400, 820, "Path Finder");
     SetWindowMinSize(1400, 820);
     SetTargetFPS(60);
+    SetExitKey(0);
     
     // represents the scroll in the grid scroll panel (unused)
     Vector2 scroll = { 0 };
