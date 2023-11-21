@@ -210,6 +210,9 @@ int main()
         .height = r_spinner.height
     };
     
+    // the mouse coordinates of the previous frame, used to for dragging the grid to scroll
+    int mousex_old = GetMouseX(), mousey_old = GetMouseY();
+    
     // loading the style
     GuiLoadStyle("../../style_bluish.rgs");
     
@@ -283,7 +286,17 @@ int main()
         bool cell_is_clicked = !locs_eq(clicked_cell.loc, null_loc);
         
         // checks whether the same cell being held, useful for obstacle placing
-        bool holding_the_same_cell = cell_is_clicked && clicked_cell.held && locs_eq(clicked_cell.loc, last_obstacle_changed);
+        bool holding_same_obstacle_cell = cell_is_clicked && clicked_cell.held && locs_eq(clicked_cell.loc, last_obstacle_changed);
+        
+        // if a cell is held with left mouse button, scroll the grid by dragging it
+        int mousex = GetMouseX(), mousey = GetMouseY();
+        if(cell_is_clicked && clicked_cell.held && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT)
+        {
+            scroll.x += (mousex - mousex_old);
+            scroll.y += (mousey - mousey_old);
+        }
+        mousex_old = mousex;
+        mousey_old = mousey;
         
         draw_path_and_set_cells(path, start, end, path_cells, cost_str, grid_topleft);
         
@@ -462,7 +475,7 @@ int main()
         }
         
         // right click/hold will set/unset obstacles, as long as its not on Start/End
-        if(cell_is_clicked && !holding_the_same_cell && clicked_cell.mouse_button == MOUSE_BUTTON_RIGHT && !locs_eq(clicked_cell.loc, start) && !locs_eq(clicked_cell.loc, end))
+        if(cell_is_clicked && !holding_same_obstacle_cell && clicked_cell.mouse_button == MOUSE_BUTTON_RIGHT && !locs_eq(clicked_cell.loc, start) && !locs_eq(clicked_cell.loc, end))
         {
             obstacles[clicked_cell.loc.y][clicked_cell.loc.x] ^= 1; // set/unset obstacle
             clear_path();
