@@ -34,10 +34,13 @@ double set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Lo
 // draws the path as green squares on the grid, storing the path cells in the `path_cells`
 void draw_path_and_set_cells(const Path *path, Loc start, Loc end, Loc *path_cells, char *cost_str, Vector2 topleft);
 
+// draws the row/col spinners and updates the rows and cols
 bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols, bool ***obstacles);
 
+// draws the obstacles on the grid as red squares
 void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 topleft, Rectangle view);
 
+// removes all the obstacles from the grid
 void clear_obstacles(bool ***obstacles, int cols, int rows);
 
 // clamps a float between 2 int values
@@ -258,6 +261,7 @@ int main()
         {
             cell_size+=2;
         }
+        
         BeginDrawing();
         
         ClearBackground(WHITE);
@@ -301,8 +305,7 @@ int main()
         
         GuiDrawRectangle(buttons_panel, 1, WHITE, WHITE);
         
-
-        
+        // if the pop-up window is open, draw it and the display the cost and time
         if(pop_up_open)
         {
             font.baseSize = font_size_small;
@@ -377,12 +380,7 @@ int main()
             no_select();
             
             time_taken = set_path(&path, obstacles, cols, rows, start, end);
-            pop_up_open = true;
-            if(!path)
-            {
-                sprintf(cost_str, "No Path");
-                pop_up_open = false;
-            }
+            pop_up_open = (path != NULL);
         }
         
         // setting the font for rows/cols spinners
@@ -754,9 +752,10 @@ bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner
     return changed_dims;
 }
 
+// draws the obstacles on the grid as red squares
 void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 topleft, Rectangle view)
 {
-    // draw the obstacles
+    // draw the obstacles that are in view
     for(int i = (view.y - topleft.y) / (cell_size + line_thickness) ; i < rows && i < (view.y + view.height - topleft.y) / (cell_size + line_thickness) + line_thickness ; i++)
     {
         for(int j = (view.x - topleft.x) / (cell_size + line_thickness) ; j < cols && j < (view.x + view.width - topleft.x) / (cell_size + line_thickness) + line_thickness ; j++)
@@ -776,6 +775,7 @@ void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 topleft, Recta
     }
 }
 
+// removes all the obstacles from the grid
 void clear_obstacles(bool ***obstacles, int cols, int rows)
 {
     for(int i = 0 ; i < rows ; i++)
@@ -787,6 +787,7 @@ void clear_obstacles(bool ***obstacles, int cols, int rows)
     }
 }
 
+// clamps a float between 2 int values
 int iclampf(float f, int min, int max)
 {
     return f > max ? max : (f < min ? min : f);
