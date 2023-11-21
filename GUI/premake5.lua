@@ -65,7 +65,7 @@ workspace (workspaceName)
 
     filter "configurations:Release"
         optimize "Speed"
-        flags { "LinkTimeOptimization", "C11" }
+        flags { "LinkTimeOptimization" }
 
     filter { "platforms:x64" }
         architecture "x86_64"
@@ -81,7 +81,7 @@ workspace (workspaceName)
         startproject(workspaceName)
     end
 
-    cdialect "C99"
+    cdialect "gnu17"
     cppdialect "C++17"
 check_raylib();
 
