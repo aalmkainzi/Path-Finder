@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "../include/path_finder.h"
 #include "../include/priority_queue.h"
 
@@ -113,6 +114,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Node *current, int c
     const float sqrt2 = sqrtf(2);
     const float step_costs[8] = {1, 1, 1, 1, sqrt2, sqrt2, sqrt2, sqrt2};
     
+    Node start_node = grid_get_at(node_grid, cols, start);
     for(int i = 0 ; i < 8 ; i++)
     {
         bool within_grid = (possible_directions & (1 << i));
@@ -121,9 +123,9 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Node *current, int c
             float step_cost = step_costs[i];
             bool passable = grid_get_at(obstacle_grid, cols, locs[i]);
             bool unvisited = !grid_get_at(node_grid, cols, locs[i]).visited;
-            bool cheaper_than_old_cost = grid_get_at(node_grid, cols, locs[i]).cost > current->cost + step_cost;
-            bool cheaper_than_start = grid_get_at(node_grid, cols, start).cost > current->cost + step_cost;
-            if(passable && unvisited && cheaper_than_old_cost && cheaper_than_start)
+            bool cheaper_than_old_cost_or_unknown = grid_get_at(node_grid, cols, locs[i]).parent_dir == UNKNOWN || grid_get_at(node_grid, cols, locs[i]).cost > current->cost + step_cost;
+            bool cheaper_than_start = start_node.parent_dir == UNKNOWN || start_node.cost > current->cost + step_cost;
+            if(passable && unvisited && cheaper_than_old_cost_or_unknown && cheaper_than_start)
             {
                 // set the cost as the previous node cost + step_cost
                 grid_get_at(node_grid, cols, locs[i]).cost = current->cost + step_cost;
@@ -148,8 +150,10 @@ Path *shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
     
     // allocate for the node grid, setting the costs to INFINITY and the parents to UNKNOWN
     Node *node_grid = (Node*) malloc(cols * rows * sizeof(Node));
-    for(int i = 0 ; i < cols * rows ; i++)
-        node_grid[i] = (Node){.parent_dir = UNKNOWN, .cost = INFINITY};
+    // for(int i = 0 ; i < cols * rows ; i++)
+    //     node_grid[i] = (Node){.parent_dir = UNKNOWN, .cost = INFINITY};
+    
+    memset(node_grid, 0, cols * rows * sizeof(Node));
     
     // the cost from end to end is 0, and end has no NONE parent
     grid_get_at(node_grid, cols, end) = (Node){.parent_dir = NONE, .cost = 0, .visited = false, .nb_steps = 0};
