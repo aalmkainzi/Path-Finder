@@ -20,13 +20,24 @@ typedef struct Cell_Click
 
 // draws a grid given the top left point and the rows and columns
 // returns the cell that was clicked
-Cell_Click draw_grid(Vector2 topleft, int cols, int rows);
+Cell_Click draw_grid(Vector2 topleft, int cols, int rows, Rectangle view);
 
 // grows/shrinks the obstacles grid according to the new rows/cols
 void resize_obstacles(bool ***obstacles, int cols, int rows);
 
 // returns a heap allocated 1D array from an array of bool arrays
 bool *obstacles_2d_to_1d(bool **obstacles);
+
+void set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end);
+
+// draws the path as green squares on the grid, storing the path cells in the `path_cells`
+void draw_path_and_set_cells(const Path *path, Loc start, Loc end, Loc *path_cells, char *cost_str, Vector2 topleft);
+
+bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols, bool ***obstacles);
+
+void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 grid_topleft);
+
+void clear_obstacles(bool ***obstacles, int cols, int rows);
 
 // clamps a float between 2 int values
 int iclampf(float f, int min, int max);
@@ -69,14 +80,17 @@ enum {
     END = 2
 } select_mode = NO_SELECT;
 
+#define INITIAL_ROWS 3
+#define INITIAL_COLS 3
+
 int main()
 {
     // start off with a 3x3 grid with no obstacles
-    int rows = 3;
-    int cols = 3;
+    int rows = INITIAL_ROWS;
+    int cols = INITIAL_COLS;
     
-    Loc start = {2, 2};
-    Loc end   = {0, 0};
+    Loc start = {0, 0};
+    Loc end   = {INITIAL_COLS - 1, INITIAL_ROWS - 1};
     
     // initialize the obstacles
     bool **obstacles = NULL;
@@ -91,6 +105,8 @@ int main()
     
     // the path describes the directions from start to end
     Path *path = NULL;
+    
+    Loc *path_cells = NULL;
     
     // this string will be displayed to show the path cost
     // "Cost: " => 6
@@ -111,16 +127,74 @@ int main()
     Vector2 scroll = { 0 };
     
     // represents what's inside the scroll panel, i.e its conent
-    Rectangle scroll_panel_content;
+    Rectangle scroll_panel_content = { 0 };
     
     // represents the sub-rectangle inside scroll_panel_content that is in view (unused)
     Rectangle scroll_view = { 0 };
     
-    // represents the bounds of the scroll panel
-    Rectangle scroll_panel;
-    
     // represents the bounds of the buttons panel
-    Rectangle buttons_panel;
+    Rectangle buttons_panel = {
+        .x = 0,
+        .y = 0,
+        .width  = 165,
+        .height = GetScreenHeight()
+    };
+    
+    // represents the bounds of the scroll panel
+    Rectangle scroll_panel = {
+        .x = buttons_panel.width,
+        .y = 0,
+        .width  = GetScreenWidth() - buttons_panel.width,
+        .height = GetScreenHeight(),
+    };
+    
+    // represents the bounds of the Start button
+    Rectangle s_button = {
+        .x = (buttons_panel.width  / 2) - (button_size / 2),
+        .y = (buttons_panel.height / 2) - (button_size / 2) - button_size,
+        .width  = button_size,
+        .height = button_size
+    };
+    
+    // represents the bounds of the End button
+    Rectangle e_button = {
+        .x = s_button.x,
+        .y = s_button.y + button_size + button_pad,
+        .width  = button_size,
+        .height = button_size
+    };
+    
+    // represents the bounds of the Clearbutton
+    Rectangle x_button = {
+        .x = s_button.x,
+        .y = s_button.y - button_pad - button_size,
+        .width  = button_size,
+        .height = button_size
+    };
+    
+    // represents the bounds of the Path button
+    Rectangle p_button = {
+        .x = s_button.x,
+        .y = x_button.y - button_pad - button_size,
+        .width  = button_size,
+        .height = button_size
+    };
+    
+    // represents the bounds of the rows spinner
+    Rectangle r_spinner = {
+        .x = s_button.x,
+        .y = e_button.y + button_size + button_pad,
+        .width  = 83,
+        .height = 45
+    };
+    
+    // represents the bounds of the cols spinner
+    Rectangle c_spinner = {
+        .x = s_button.x,
+        .y = r_spinner.y + r_spinner.height + button_pad,
+        .width  = r_spinner.width,
+        .height = r_spinner.height
+    };
     
     // loading the style
     GuiLoadStyle("../../style_bluish.rgs");
@@ -135,84 +209,44 @@ int main()
     
     while(!WindowShouldClose())
     {
-        // setting the bounds for the buttons panel, scales with window height
-        buttons_panel = (Rectangle){
-            .x = 0,
-            .y = 0,
-            .width  = 165,
-            .height = GetScreenHeight()
-        };
+        // setting the height for the buttons panel, it scales with window height
+        buttons_panel.height = GetScreenHeight();
         
         // setting the bounds for the scroll panel, scales with window size
-        scroll_panel = (Rectangle){
-            .x = buttons_panel.width,
-            .y = 0,
-            .width  = GetScreenWidth() - buttons_panel.width,
-            .height = GetScreenHeight(),
-        };
+        scroll_panel.width = GetScreenWidth() - buttons_panel.width;
+        scroll_panel.height = GetScreenHeight();
         
-        // setting the scroll panel content rectangle, its size depends on rows/cols
-        scroll_panel_content = (Rectangle){
-            .x = 0,
-            .y = 0,
-            .width  = cols * (cell_size + line_thickness) + line_thickness,
-            .height = rows * (cell_size + line_thickness)
-        };
+        // setting the scroll panel bound, its size depends on rows/cols and cell_size
+        scroll_panel_content.width  = cols * (cell_size + line_thickness) + line_thickness;
+        scroll_panel_content.height = rows * (cell_size + line_thickness);
         
-        // setting the Start button bounds rectangle
-        Rectangle s_button = {
-            .x = (buttons_panel.width  / 2) - (button_size / 2),
-            .y = (buttons_panel.height / 2) - (button_size / 2) - button_size,
-            .width  = button_size,
-            .height = button_size
-        };
+        // setting the Start button y dimension, scales with window height
+        s_button.y = (buttons_panel.height / 2) - (button_size / 2) - button_size;
         
-        // setting the End button bounds rectangle
-        Rectangle e_button = {
-            .x = s_button.x,
-            .y = s_button.y + button_size + button_pad,
-            .width  = button_size,
-            .height = button_size
-        };
+        // setting the End button y dimension, scales with window height
+        e_button.y = s_button.y + button_size + button_pad;
         
-        // setting the clear button bounds rectangle
-        Rectangle x_button = {
-            .x = s_button.x,
-            .y = s_button.y - button_pad - button_size,
-            .width  = button_size,
-            .height = button_size
-        };
+        // setting the Clear button y dimension, scales with window height
+        x_button.y = s_button.y - button_pad - button_size;
         
-        // setting the path button bounds rectangle
-        Rectangle p_button = {
-            .x = s_button.x,
-            .y = x_button.y - button_pad - button_size,
-            .width  = button_size,
-            .height = button_size
-        };
+        // setting the Path button y dimension, scales with window height
+        p_button.y = x_button.y - button_pad - button_size;
         
-        // setting the row spinner bounds rectangle
-        Rectangle r_spinner = {
-            .x = s_button.x,
-            .y = e_button.y + button_size + button_pad,
-            .width  = 83,
-            .height = 45
-        };
+        // setting the row spinner y dimension, scales with window height
+        r_spinner.y = e_button.y + button_size + button_pad;
         
-        // setting the column spinner bounds rectangle
-        Rectangle c_spinner = {
-            .x = s_button.x,
-            .y = r_spinner.y + r_spinner.height + button_pad,
-            .width  = r_spinner.width,
-            .height = r_spinner.height
-        };
+        // setting the column spinner y dimension, scales with window height
+        c_spinner.y = r_spinner.y + r_spinner.height + button_pad;
         
         // change cell size if '-' or '=' are pressed
-        if(IsKeyDown(KEY_MINUS) && cell_size >= 20)
+        if(cell_size >= 20 && IsKeyDown(KEY_MINUS))
+        {
             cell_size-=2;
-        if(IsKeyDown(KEY_EQUAL) && cell_size <= 256)
+        }
+        if(cell_size <= 256 && IsKeyDown(KEY_EQUAL))
+        {
             cell_size+=2;
-        
+        }
         BeginDrawing();
         
         ClearBackground(WHITE);
@@ -227,7 +261,8 @@ int main()
         };
         
         // draw the grid and get the clicked cell
-        Cell_Click clicked_cell = draw_grid(grid_topleft, cols, rows);
+        Cell_Click clicked_cell = draw_grid(grid_topleft, cols, rows, scroll_view);
+        draw_obstacles(obstacles, cols, rows, grid_topleft);
         
         // checks whether a cell is clicked
         bool cell_is_clicked = !locs_eq(clicked_cell.loc, null_loc);
@@ -235,36 +270,7 @@ int main()
         // checks whether the same cell being held, useful for obstacle placing
         bool holding_the_same_cell = cell_is_clicked && clicked_cell.held && locs_eq(clicked_cell.loc, last_obstacle_changed);
         
-        // if a path exists, draw it on the grid
-        if(path)
-        {
-            Loc current = start;
-            for(int i = 0 ; i < path->nb ; current = next_loc(current, path->dirs[i]), i++)
-            {
-                // this rectangle represents the current cell in the path
-                Rectangle path_cell_rect = {
-                    .x = grid_topleft.x + line_thickness + (current.x * (cell_size + line_thickness)),
-                    .y = grid_topleft.y + line_thickness + (current.y * (cell_size + line_thickness)),
-                    .width  = cell_size,
-                    .height = cell_size
-                };
-                
-                // draw the path cell as GREEN
-                DrawRectangleRec(path_cell_rect, GREEN);
-            }
-            
-            // draw the End cell as green since it's not included in the previous loop
-            Rectangle end_rect = {
-                .x = grid_topleft.x + line_thickness + (end.x * (cell_size + line_thickness)),
-                .y = grid_topleft.y + line_thickness + (end.y * (cell_size + line_thickness)),
-                .width  = cell_size,
-                .height = cell_size
-            };
-            DrawRectangleRec(end_rect, GREEN);
-            
-            // set the path cost to the cost string
-            sprintf(cost_str, "Cost: %.2f", path->cost);
-        }
+        draw_path_and_set_cells(path, start, end, path_cells, cost_str, grid_topleft);
         
         // draw the Start icon on the grid if within it
         if(within_grid(start, cols, rows))
@@ -284,17 +290,18 @@ int main()
         
         GuiDrawRectangle(buttons_panel, 1, WHITE, WHITE);
         
-        // setting the font for the cost string
+        // setting the font for the cost label
         font.baseSize = font_size_big;
         GuiSetFont(font);
         
         // setting the cost text bounds rectangle
         Rectangle cost_label_bounds = {
-            .x = (buttons_panel.width/2) - (MeasureTextEx(font, cost_str, font.baseSize, 1).x),
+            .x = (buttons_panel.width / 2.0f) - (GetTextWidth(cost_str) / 2.0f),
             .y = x_button.y - button_pad - 9,
             .width  = buttons_panel.width,
             .height = button_size
         };
+        
         GuiLabel(cost_label_bounds, cost_str);
         
         // get whether any of the buttons was clicked
@@ -309,13 +316,7 @@ int main()
             no_select();
             
             // remove all obstacles
-            for(int i = 0 ; i < rows ; i++)
-            {
-                for(int j = 0 ; j < cols ; j++)
-                {
-                    obstacles[i][j] = true;
-                }
-            }
+            clear_obstacles(&obstacles, cols, rows);
             
             // clear the path
             clear_path();
@@ -335,10 +336,9 @@ int main()
         if(find_clicked && within_grid(start, cols, rows) && within_grid(end, cols, rows))
         {
             no_select();
-            bool *obstacles1d = obstacles_2d_to_1d(obstacles);
-            free(path);
-            path = shortest_path(obstacles1d, cols, rows, start, end);
-            free(obstacles1d);
+            
+            set_path(&path, obstacles, cols, rows, start, end);
+            
             if(!path)
             {
                 sprintf(cost_str, "No Path");
@@ -349,57 +349,21 @@ int main()
         font.baseSize = font_size_small;
         GuiSetFont(font);
         
-        // drawing the spinners and updating the rows/cols
-        int old_rows = rows, old_cols = cols;
-        GuiSpinner(r_spinner, "Rows ", &rows, 1, INT_MAX, false);
-        GuiSpinner(c_spinner, "Cols ", &cols, 1, INT_MAX, false);
-        
-        // if mouse is hovering over spinner and scrolls up/down, the value should change
-        int mousex = GetMouseX();
-        int mousey = GetMouseY();
-        float spinner_scroll = GetMouseWheelMoveV().y;
-        
-        if(mousex >= r_spinner.x && mousex <= r_spinner.x + r_spinner.width)
-            if(mousey >= r_spinner.y && mousey <= r_spinner.y + r_spinner.height)
-                rows += iclampf(spinner_scroll, -1, 1);
-        
-        if(mousex >= c_spinner.x && mousex <= c_spinner.x + c_spinner.width)
-            if(mousey >= c_spinner.y && mousey <= c_spinner.y + c_spinner.height)
-                cols += iclampf(spinner_scroll, -1, 1);
+        //int old_rows = rows, old_cols = cols;
+        bool changed_rows_cols = draw_spinners_and_update_rows_cols(r_spinner, c_spinner, &rows, &cols, &obstacles);
         
         // resize the obstacles grid if rows/cols was changed
-        if(old_rows != rows || old_cols != cols)
+        if(changed_rows_cols)
         {
             resize_obstacles(&obstacles, cols, rows);
             clear_path();
-        }
-        
-        // draw the obstacles
-        for(int i = 0 ; i < rows ; i++)
-        {
-            for(int j = 0 ; j < cols ; j++)
-            {
-                if(!obstacles[i][j])
-                {
-                    Rectangle obstacle_rect = {
-                        .x = grid_topleft.x + line_thickness + (j * (cell_size + line_thickness)),
-                        .y = grid_topleft.y + line_thickness + (i * (cell_size + line_thickness)),
-                        .width  = cell_size,
-                        .height = cell_size
-                    };
-                    
-                    DrawRectangleRec(obstacle_rect, RED);
-                }
-            }
         }
         
         // have the cursor be normal or an S or an E depending on the select mode
         const int cursor_icon_size = 4;
         switch(select_mode)
         {
-            case NO_SELECT:
-                ShowCursor();
-                
+            case NO_SELECT:                
                 // since we're in normal cursor mode, the user should be able to click on the S/E on the grid
                 if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT)
                 {
@@ -475,7 +439,7 @@ int main()
     CloseWindow();
 }
 
-Cell_Click draw_grid(Vector2 topleft, int cols, int rows)
+Cell_Click draw_grid(Vector2 topleft, int cols, int rows, Rectangle view)
 {
     Cell_Click ret = {
         .loc  = null_loc,
@@ -530,16 +494,28 @@ Cell_Click draw_grid(Vector2 topleft, int cols, int rows)
     }
     
     // drawing the rows
-    for(int i = 0 ; i < rows + 1; i++)
+    for(int i = (view.y - topleft.y) / (cell_size + line_thickness) ; i < rows + 1 && i < (view.y + view.height - topleft.y) / (cell_size + line_thickness) + line_thickness; i++)
     {
-        Rectangle line = {topleft.x, topleft.y + (i * (cell_size + line_thickness)), cols * (cell_size + line_thickness) + line_thickness, line_thickness};
+        Rectangle line = {
+            .x = topleft.x,
+            .y = topleft.y + (i * (cell_size + line_thickness)),
+            .width  = cols * (cell_size + line_thickness) + line_thickness,
+            .height = line_thickness
+        };
+        
         DrawRectangleRec(line, BLACK);
     }
     
     // drawing the cols
-    for(int i = 0 ; i < cols + 1; i++)
+    for(int i = (view.x - topleft.x) / (cell_size + line_thickness) ; i < cols + 1 && i < (view.x + view.width - topleft.x) / (cell_size + line_thickness) + line_thickness; i++)
     {
-        Rectangle line = {topleft.x + (i * (cell_size + line_thickness)), topleft.y, line_thickness, rows * (cell_size + line_thickness)};
+        Rectangle line = {
+            .x = topleft.x + (i * (cell_size + line_thickness)),
+            .y = topleft.y,
+            .width  = line_thickness,
+            .height = rows * (cell_size + line_thickness)
+        };
+        
         DrawRectangleRec(line, BLACK);
     }
     
@@ -598,6 +574,165 @@ bool *obstacles_2d_to_1d(bool **obstacles)
     }
     
     return ret;
+}
+
+void set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end)
+{
+    bool *obstacles1d = obstacles_2d_to_1d(obstacles);
+    free(*path);
+    *path = shortest_path(obstacles1d, cols, rows, start, end);
+    free(obstacles1d);
+}
+
+// draws the path as green squares on the grid, storing the path cells in the 'path_cells'
+void draw_path_and_set_cells(const Path *path, Loc start, Loc end, Loc *path_cells, char *cost_str, Vector2 topleft)
+{
+    // if a path exists, draw it on the grid
+    if(path)
+    {
+        if(!path_cells)
+        {
+            path_cells = calloc(path->nb + 1, sizeof(Loc));
+            Loc current = start;
+            for(int i = 0 ; i < path->nb ; current = next_loc(current, path->dirs[i]), i++)
+            {
+                // add the current cell to the path cells
+                path_cells[i] = current;
+                
+                // this rectangle represents the current cell in the path
+                Rectangle path_cell_rect = {
+                    .x = topleft.x + line_thickness + (current.x * (cell_size + line_thickness)),
+                    .y = topleft.y + line_thickness + (current.y * (cell_size + line_thickness)),
+                    .width  = cell_size,
+                    .height = cell_size
+                };
+                
+                // draw the path cell as GREEN
+                DrawRectangleRec(path_cell_rect, GREEN);
+            }
+            
+            // add to path cells and draw the End cell as green since it's not included in the previous loop
+            path_cells[path->nb] = end;
+            Rectangle end_rect = {
+                .x = topleft.x + line_thickness + (end.x * (cell_size + line_thickness)),
+                .y = topleft.y + line_thickness + (end.y * (cell_size + line_thickness)),
+                .width  = cell_size,
+                .height = cell_size
+            };
+            DrawRectangleRec(end_rect, GREEN);
+        }
+        else
+        {
+            for(int i = 0 ; i < path->nb + 1 ; i++)
+            {
+                // add the current cell to the path cells
+                Loc current = path_cells[i];
+                
+                // this rectangle represents the current cell in the path
+                Rectangle path_cell_rect = {
+                    .x = topleft.x + line_thickness + (current.x * (cell_size + line_thickness)),
+                    .y = topleft.y + line_thickness + (current.y * (cell_size + line_thickness)),
+                    .width  = cell_size,
+                    .height = cell_size
+                };
+                
+                // draw the path cell as GREEN
+                DrawRectangleRec(path_cell_rect, GREEN);
+            }
+        }
+        
+        // set the path cost to the cost string
+        sprintf(cost_str, "Cost: %.2f", path->cost);
+    }
+}
+
+bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols, bool ***obstacles)
+{
+    static bool edit_rows = false;
+    static bool edit_cols = false;
+    static int edited_rows = INITIAL_ROWS;
+    static int edited_cols = INITIAL_COLS;
+    
+    int old_rows = *rows, old_cols = *cols;
+    
+    // drawing the spinners and updating the rows/cols
+    // if user clicks on the spinner, he will be able to edit the value directly
+    edit_rows = GuiSpinner(r_spinner, "Rows ", edit_rows ? &edited_rows : rows, 1, INT_MAX, edit_rows) ? true : edit_rows;
+    edit_cols = GuiSpinner(c_spinner, "Cols ", edit_cols ? &edited_cols : cols, 1, INT_MAX, edit_cols) ? true : edit_cols;
+    
+    // pressing enter will confirm edit
+    bool enter_pressed = IsKeyPressed(KEY_ENTER);
+    if(edit_rows && enter_pressed)
+    {
+        edit_rows = false;
+        if(edited_rows < 1)
+            edited_rows = 1;
+        *rows = edited_rows;
+    }
+    if(edit_cols && enter_pressed)
+    {
+        edit_cols = false;
+        if(edited_cols < 1)
+            edited_cols = 1;
+        *cols = edited_cols;
+    }
+    
+    // if mouse is hovering over spinner and scrolls up/down, the value should change
+    int mousex = GetMouseX();
+    int mousey = GetMouseY();
+    float spinner_scroll = GetMouseWheelMoveV().y;
+    
+    if(mousex >= r_spinner.x && mousex <= r_spinner.x + r_spinner.width)
+        if(mousey >= r_spinner.y && mousey <= r_spinner.y + r_spinner.height)
+            *rows += iclampf(spinner_scroll, -1, 1);
+    
+    if(mousex >= c_spinner.x && mousex <= c_spinner.x + c_spinner.width)
+        if(mousey >= c_spinner.y && mousey <= c_spinner.y + c_spinner.height)
+            *cols += iclampf(spinner_scroll, -1, 1);
+    
+    bool changed_dims = *rows != old_rows || *cols != old_cols;
+    if(changed_dims)
+    {
+        if(!edit_rows)
+            edited_rows = *rows;
+        if(!edit_cols)
+            edited_cols = *cols;
+    }
+    
+    return changed_dims;
+}
+
+void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 grid_topleft)
+{
+    // draw the obstacles
+    for(int i = 0 ; i < rows ; i++)
+    {
+        for(int j = 0 ; j < cols ; j++)
+        {
+            if(!obstacles[i][j])
+            {
+                Rectangle obstacle_rect = {
+                    .x = grid_topleft.x + line_thickness + (j * (cell_size + line_thickness)),
+                    .y = grid_topleft.y + line_thickness + (i * (cell_size + line_thickness)),
+                    .width  = cell_size,
+                    .height = cell_size
+                };
+                
+                DrawRectangleRec(obstacle_rect, RED);
+            }
+        }
+    }
+}
+
+void clear_obstacles(bool ***obstacles, int cols, int rows)
+{
+    for(int i = 0 ; i < rows ; i++)
+    {
+        for(int j = 0 ; j < cols ; j++)
+        {
+            (*obstacles)[i][j] = true;
+        }
+    }
 }
 
 int iclampf(float f, int min, int max)
