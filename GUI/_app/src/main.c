@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 #include "../include/path_finder.h"
 #define STB_DS_IMPLEMENTATION
 #include "../libs/stb_ds.h"
@@ -28,7 +29,7 @@ void resize_obstacles(bool ***obstacles, int cols, int rows);
 // returns a heap allocated 1D array from an array of bool arrays
 bool *obstacles_2d_to_1d(bool **obstacles);
 
-void set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end);
+double set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end);
 
 // draws the path as green squares on the grid, storing the path cells in the `path_cells`
 void draw_path_and_set_cells(const Path *path, Loc start, Loc end, Loc *path_cells, char *cost_str, Vector2 topleft);
@@ -114,13 +115,23 @@ int main()
     // '\0'     => 1
     char cost_str[6 + 13 + 1] = "";
     
+    // this string will be displayed to show time taken
+    // "Time: " => 6
+    // "%.4lf"  => 30
+    // '\0'     => 1
+    char time_str[6 + 30 + 1] = "";
+    
+    double time_taken = 0;
+    
+    bool pop_up_open = false;
+    
     // the location of the last obstacle set, used to not set/unset the same cell when right click is held
     Loc last_obstacle_changed = null_loc;
     
     // set up the window
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(1280, 720, "Path Finder");
-    SetWindowMinSize(1280, 720);
+    InitWindow(1280, 820, "Path Finder");
+    SetWindowMinSize(1280, 820);
     SetTargetFPS(60);
     
     // represents the scroll in the grid scroll panel (unused)
@@ -290,19 +301,47 @@ int main()
         
         GuiDrawRectangle(buttons_panel, 1, WHITE, WHITE);
         
-        // setting the font for the cost label
-        font.baseSize = font_size_big;
-        GuiSetFont(font);
+
         
-        // setting the cost text bounds rectangle
-        Rectangle cost_label_bounds = {
-            .x = (buttons_panel.width / 2.0f) - (GetTextWidth(cost_str) / 2.0f),
-            .y = x_button.y - button_pad - 9,
-            .width  = buttons_panel.width,
-            .height = button_size
-        };
-        
-        GuiLabel(cost_label_bounds, cost_str);
+        if(pop_up_open)
+        {
+            font.baseSize = font_size_small;
+            GuiSetFont(font);
+            Rectangle popup_bounds = {
+                .x = (GetScreenWidth() / 2.0f) - (512 / 2.0f),
+                .y = (GetScreenHeight() / 2.0f) - (256 / 2.0f),
+                .width  = 512,
+                .height = 256
+            };
+            
+            pop_up_open = !GuiWindowBox(popup_bounds, "Result");
+            
+            // setting the font for the cost label
+            font.baseSize = font_size_big;
+            GuiSetFont(font);
+            
+            int cost_label_width = GetTextWidth(cost_str);
+            Rectangle cost_label_bounds = {
+                .x = popup_bounds.x + (popup_bounds.width / 2) - (cost_label_width / 2.0f),
+                .y = popup_bounds.y + (popup_bounds.height / 2) - (button_size / 2.0f),
+                .width  = cost_label_width,
+                .height = 24
+            };
+            
+            GuiLabel(cost_label_bounds, cost_str);
+            
+            sprintf(time_str, "Time: %.4lfs", time_taken);
+            int time_label_width = GetTextWidth(time_str);
+            
+            Rectangle time_label_bounds = {
+                .x = popup_bounds.x + (popup_bounds.width / 2) - (time_label_width / 2.0f),
+                .y = cost_label_bounds.y + cost_label_bounds.height + button_pad,
+                .width  = time_label_width,
+                .height = 24
+            };
+            
+            GuiLabel(time_label_bounds, time_str);
+        }
         
         // get whether any of the buttons was clicked
         bool find_clicked  = GuiButton(p_button, "#73#");
@@ -337,11 +376,12 @@ int main()
         {
             no_select();
             
-            set_path(&path, obstacles, cols, rows, start, end);
-            
+            time_taken = set_path(&path, obstacles, cols, rows, start, end);
+            pop_up_open = true;
             if(!path)
             {
                 sprintf(cost_str, "No Path");
+                pop_up_open = false;
             }
         }
         
@@ -576,12 +616,24 @@ bool *obstacles_2d_to_1d(bool **obstacles)
     return ret;
 }
 
-void set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end)
+double diff_timespec(struct timespec time1, struct timespec time0) {
+  return (time1.tv_sec - time0.tv_sec)
+      + (time1.tv_nsec - time0.tv_nsec) / 1000000000.0;
+}
+
+double set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end)
 {
     bool *obstacles1d = obstacles_2d_to_1d(obstacles);
     free(*path);
+    
+    struct timespec before = { 0 }, after = { 0 };
+    timespec_get(&before, TIME_UTC);
     *path = shortest_path(obstacles1d, cols, rows, start, end);
+    timespec_get(&after, TIME_UTC);
+    
     free(obstacles1d);
+    
+    return diff_timespec(after, before);
 }
 
 // draws the path as green squares on the grid, storing the path cells in the 'path_cells'
