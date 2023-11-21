@@ -36,7 +36,7 @@ void draw_path_and_set_cells(const Path *path, Loc start, Loc end, Loc *path_cel
 
 bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols, bool ***obstacles);
 
-void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 grid_topleft);
+void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 topleft, Rectangle view);
 
 void clear_obstacles(bool ***obstacles, int cols, int rows);
 
@@ -130,8 +130,8 @@ int main()
     
     // set up the window
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    InitWindow(1280, 820, "Path Finder");
-    SetWindowMinSize(1280, 820);
+    InitWindow(1400, 820, "Path Finder");
+    SetWindowMinSize(1400, 820);
     SetTargetFPS(60);
     
     // represents the scroll in the grid scroll panel (unused)
@@ -147,7 +147,7 @@ int main()
     Rectangle buttons_panel = {
         .x = 0,
         .y = 0,
-        .width  = 165,
+        .width  = 245,
         .height = GetScreenHeight()
     };
     
@@ -161,8 +161,8 @@ int main()
     
     // represents the bounds of the Start button
     Rectangle s_button = {
-        .x = (buttons_panel.width  / 2) - (button_size / 2),
-        .y = (buttons_panel.height / 2) - (button_size / 2) - button_size,
+        .x = (buttons_panel.width  / 2) - (button_size / 2.0f),
+        .y = (buttons_panel.height / 2) - (button_size / 2.0f) - button_size,
         .width  = button_size,
         .height = button_size
     };
@@ -195,7 +195,7 @@ int main()
     Rectangle r_spinner = {
         .x = s_button.x,
         .y = e_button.y + button_size + button_pad,
-        .width  = 83,
+        .width  = 120,
         .height = 45
     };
     
@@ -232,7 +232,7 @@ int main()
         scroll_panel_content.height = rows * (cell_size + line_thickness);
         
         // setting the Start button y dimension, scales with window height
-        s_button.y = (buttons_panel.height / 2) - (button_size / 2) - button_size;
+        s_button.y = (buttons_panel.height / 2) - (button_size / 2.0f) - button_size;
         
         // setting the End button y dimension, scales with window height
         e_button.y = s_button.y + button_size + button_pad;
@@ -273,7 +273,7 @@ int main()
         
         // draw the grid and get the clicked cell
         Cell_Click clicked_cell = draw_grid(grid_topleft, cols, rows, scroll_view);
-        draw_obstacles(obstacles, cols, rows, grid_topleft);
+        draw_obstacles(obstacles, cols, rows, grid_topleft, scroll_view);
         
         // checks whether a cell is clicked
         bool cell_is_clicked = !locs_eq(clicked_cell.loc, null_loc);
@@ -754,18 +754,18 @@ bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner
     return changed_dims;
 }
 
-void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 grid_topleft)
+void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 topleft, Rectangle view)
 {
     // draw the obstacles
-    for(int i = 0 ; i < rows ; i++)
+    for(int i = (view.y - topleft.y) / (cell_size + line_thickness) ; i < rows && i < (view.y + view.height - topleft.y) / (cell_size + line_thickness) + line_thickness ; i++)
     {
-        for(int j = 0 ; j < cols ; j++)
+        for(int j = (view.x - topleft.x) / (cell_size + line_thickness) ; j < cols && j < (view.x + view.width - topleft.x) / (cell_size + line_thickness) + line_thickness ; j++)
         {
             if(!obstacles[i][j])
             {
                 Rectangle obstacle_rect = {
-                    .x = grid_topleft.x + line_thickness + (j * (cell_size + line_thickness)),
-                    .y = grid_topleft.y + line_thickness + (i * (cell_size + line_thickness)),
+                    .x = topleft.x + line_thickness + (j * (cell_size + line_thickness)),
+                    .y = topleft.y + line_thickness + (i * (cell_size + line_thickness)),
                     .width  = cell_size,
                     .height = cell_size
                 };
