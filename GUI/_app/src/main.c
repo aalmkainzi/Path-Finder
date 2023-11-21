@@ -29,6 +29,10 @@ void resize_obstacles(bool ***obstacles, int cols, int rows);
 // returns a heap allocated 1D array from an array of bool arrays
 bool *obstacles_2d_to_1d(bool **obstacles);
 
+// scrolls the grid if dragging it with mouse
+void scroll_by_dragging_mouse(Cell_Click cell_click, int *mousex_old, int *mousey_old, Vector2 *scroll);
+
+// calls the shortest path algorithm and sets the path
 double set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end);
 
 // draws the path as green squares on the grid, storing the path cells in the `path_cells`
@@ -280,7 +284,6 @@ int main()
         
         // draw the grid and get the clicked cell
         Cell_Click clicked_cell = draw_grid(grid_topleft, cols, rows, scroll_view);
-        draw_obstacles(obstacles, cols, rows, grid_topleft, scroll_view);
         
         // checks whether a cell is clicked
         bool cell_is_clicked = !locs_eq(clicked_cell.loc, null_loc);
@@ -288,15 +291,9 @@ int main()
         // checks whether the same cell being held, useful for obstacle placing
         bool holding_same_obstacle_cell = cell_is_clicked && clicked_cell.held && locs_eq(clicked_cell.loc, last_obstacle_changed);
         
-        // if a cell is held with left mouse button, scroll the grid by dragging it
-        int mousex = GetMouseX(), mousey = GetMouseY();
-        if(cell_is_clicked && clicked_cell.held && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT)
-        {
-            scroll.x += (mousex - mousex_old);
-            scroll.y += (mousey - mousey_old);
-        }
-        mousex_old = mousex;
-        mousey_old = mousey;
+        scroll_by_dragging_mouse(clicked_cell, &mousex_old, &mousey_old, &scroll);
+        
+        draw_obstacles(obstacles, cols, rows, grid_topleft, scroll_view);
         
         draw_path_and_set_cells(path, start, end, path_cells, cost_str, grid_topleft);
         
@@ -633,11 +630,27 @@ bool *obstacles_2d_to_1d(bool **obstacles)
     return ret;
 }
 
+// scrolls the grid if dragging it with mouse
+void scroll_by_dragging_mouse(Cell_Click cell_click, int *mousex_old, int *mousey_old, Vector2 *scroll)
+{
+    // if a cell is held with left mouse button, scroll the grid by dragging it
+    int mousex = GetMouseX(), mousey = GetMouseY();
+    if(!locs_eq(cell_click.loc, null_loc) && cell_click.held && cell_click.mouse_button == MOUSE_BUTTON_LEFT)
+    {
+        scroll->x += (mousex - *mousex_old);
+        scroll->y += (mousey - *mousey_old);
+    }
+    *mousex_old = mousex;
+    *mousey_old = mousey;
+}
+
+// returns the difference between two times as a double
 double diff_timespec(struct timespec time1, struct timespec time0) {
   return (time1.tv_sec - time0.tv_sec)
       + (time1.tv_nsec - time0.tv_nsec) / 1000000000.0;
 }
 
+// calls the shortest path algorithm and sets the path
 double set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end)
 {
     bool *obstacles1d = obstacles_2d_to_1d(obstacles);
