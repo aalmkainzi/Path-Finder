@@ -319,7 +319,7 @@ int main()
             
             pop_up_open = !GuiWindowBox(popup_bounds, "Result");
             
-            // setting the font for the cost label
+            // setting the font for the cost and time labels
             font.baseSize = font_size_big;
             GuiSetFont(font);
             
@@ -333,17 +333,20 @@ int main()
             
             GuiLabel(cost_label_bounds, cost_str);
             
-            sprintf(time_str, "Time: %.4lfs", time_taken);
-            int time_label_width = GetTextWidth(time_str);
-            
-            Rectangle time_label_bounds = {
-                .x = popup_bounds.x + (popup_bounds.width / 2) - (time_label_width / 2.0f),
-                .y = cost_label_bounds.y + cost_label_bounds.height + button_pad,
-                .width  = time_label_width,
-                .height = 24
-            };
-            
-            GuiLabel(time_label_bounds, time_str);
+            if(path)
+            {
+                sprintf(time_str, "Time: %.4lfs", time_taken);
+                int time_label_width = GetTextWidth(time_str);
+                
+                Rectangle time_label_bounds = {
+                    .x = popup_bounds.x + (popup_bounds.width / 2) - (time_label_width / 2.0f),
+                    .y = cost_label_bounds.y + cost_label_bounds.height + button_pad,
+                    .width  = time_label_width,
+                    .height = 24
+                };
+                
+                GuiLabel(time_label_bounds, time_str);
+            }
         }
         
         // get whether any of the buttons was clicked
@@ -380,7 +383,12 @@ int main()
             no_select();
             
             time_taken = set_path(&path, obstacles, cols, rows, start, end);
-            pop_up_open = (path != NULL);
+            pop_up_open = true;
+            if(!path)
+            {
+                sprintf(cost_str, "No Path");
+            }
+            //pop_up_open = (path != NULL);
         }
         
         // setting the font for rows/cols spinners
