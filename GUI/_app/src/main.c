@@ -333,20 +333,18 @@ int main()
             
             GuiLabel(cost_label_bounds, cost_str);
             
-            if(path)
-            {
-                sprintf(time_str, "Time: %.4lfs", time_taken);
-                int time_label_width = GetTextWidth(time_str);
-                
-                Rectangle time_label_bounds = {
-                    .x = popup_bounds.x + (popup_bounds.width / 2) - (time_label_width / 2.0f),
-                    .y = cost_label_bounds.y + cost_label_bounds.height + button_pad,
-                    .width  = time_label_width,
-                    .height = 24
-                };
-                
-                GuiLabel(time_label_bounds, time_str);
-            }
+            
+            sprintf(time_str, "Time: %.4lfs", time_taken);
+            int time_label_width = GetTextWidth(time_str);
+            
+            Rectangle time_label_bounds = {
+                .x = popup_bounds.x + (popup_bounds.width / 2) - (time_label_width / 2.0f),
+                .y = cost_label_bounds.y + cost_label_bounds.height + button_pad,
+                .width  = time_label_width,
+                .height = 24
+            };
+            
+            GuiLabel(time_label_bounds, time_str);
         }
         
         // get whether any of the buttons was clicked
