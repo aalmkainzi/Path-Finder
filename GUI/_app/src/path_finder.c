@@ -150,8 +150,6 @@ Path *shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
     
     // allocate for the node grid, setting the costs to INFINITY and the parents to UNKNOWN
     Node *node_grid = (Node*) malloc(cols * rows * sizeof(Node));
-    // for(int i = 0 ; i < cols * rows ; i++)
-    //     node_grid[i] = (Node){.parent_dir = UNKNOWN, .cost = INFINITY};
     
     memset(node_grid, 0, cols * rows * sizeof(Node));
     
