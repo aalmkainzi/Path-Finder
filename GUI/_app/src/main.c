@@ -627,9 +627,9 @@ double set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Lo
     free(*path);
     
     struct timespec before = { 0 }, after = { 0 };
-    timespec_get(&before, TIME_UTC);
+    clock_gettime(CLOCK_REALTIME, &before);
     *path = shortest_path(obstacles1d, cols, rows, start, end);
-    timespec_get(&after, TIME_UTC);
+    clock_gettime(CLOCK_REALTIME, &after);
     
     free(obstacles1d);
     
