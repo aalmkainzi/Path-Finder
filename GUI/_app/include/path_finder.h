@@ -20,8 +20,8 @@ typedef struct Loc
 
 // Represents the direction of the parent of a node
 typedef enum Parent_Direction {
-    NONE       = 0, // only for end, as it has no parent
-    UNKNOWN    = 1, // for unexpanded nodes
+    UNKNOWN    = 0, // for unexpanded nodes
+    NONE       = 1, // only for end, as it has no parent
     UP         = 2,
     RIGHT      = 3,
     DOWN       = 4,
