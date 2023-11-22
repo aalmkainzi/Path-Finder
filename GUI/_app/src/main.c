@@ -128,8 +128,10 @@ int main()
     // '\0'     => 1
     char time_str[6 + 30 + 1] = "";
     
+    // represents the time taken by the shortest path algorithm to find the path
     double time_taken = 0;
     
+    // if true the pop-up window showing the cost and time taken will appear
     bool pop_up_open = false;
     
     // the location of the last obstacle set, used to not set/unset the same cell when right click is held
