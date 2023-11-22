@@ -80,11 +80,9 @@ static void sift_down(Priority_Queue *q)
         parent = least;
     } while(least != old_parent);
 }
-#include <stdio.h>
+
 void heapify(Priority_Queue *q, int at)
 {
-    printf("REACHED HERE");
-    fflush(stdout);
     int left  = left(at);
     int right = right(at);
     int min = at;
