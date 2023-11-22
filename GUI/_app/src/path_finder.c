@@ -115,7 +115,6 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Node *current, int c
     const float sqrt2 = sqrtf(2);
     const float step_costs[8] = {1, 1, 1, 1, sqrt2, sqrt2, sqrt2, sqrt2};
     
-    Node start_node = grid_get_at(node_grid, cols, start);
     for(int i = 0 ; i < 8 ; i++)
     {
         bool within_grid = (possible_directions & (1 << i));
@@ -125,7 +124,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Node *current, int c
             bool passable = grid_get_at(obstacle_grid, cols, locs[i]);
             bool unvisited = !grid_get_at(node_grid, cols, locs[i]).visited;
             bool cheaper_than_old_cost_or_unknown = grid_get_at(node_grid, cols, locs[i]).parent_dir == UNKNOWN || grid_get_at(node_grid, cols, locs[i]).cost > current->cost + step_cost;
-            bool cheaper_than_start = start_node.parent_dir == UNKNOWN || start_node.cost > current->cost + step_cost;
+            bool cheaper_than_start = grid_get_at(node_grid, cols, start).parent_dir == UNKNOWN || grid_get_at(node_grid, cols, start).cost > current->cost + step_cost;
             if(passable && unvisited && cheaper_than_old_cost_or_unknown && cheaper_than_start)
             {
                 // set the cost as the previous node cost + step_cost
