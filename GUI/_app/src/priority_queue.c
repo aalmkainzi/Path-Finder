@@ -32,6 +32,8 @@ static void sift_up(Priority_Queue *q)
         swap_nodes(&q->data[current], &q->data[parent(current)]);
         current = parent(current);
     }
+    
+    q->data[current]->enqueued = current + 1;
 }
 
 // compares parent with left and right children
