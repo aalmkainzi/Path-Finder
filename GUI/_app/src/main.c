@@ -114,7 +114,6 @@ int main()
     
     // the path describes the directions from start to end
     Path *path = NULL;
-    
     Loc *path_cells = NULL;
     
     // this string will be displayed to show the path cost
@@ -398,7 +397,6 @@ int main()
             {
                 sprintf(cost_str, "No Path");
             }
-            //pop_up_open = (path != NULL);
         }
         
         // setting the font for rows/cols spinners
