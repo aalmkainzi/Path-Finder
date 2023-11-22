@@ -55,7 +55,6 @@ int iclampf(float f, int min, int max);
 do { \
     free(path); \
     path = NULL; \
-    pop_up_open = false; \
     cost_str[0] = '\0'; \
 } while(0)
 

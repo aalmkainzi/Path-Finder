@@ -45,6 +45,7 @@ typedef struct Node {
     float cost;
     bool visited;
     int nb_steps;
+    int enqueued; // 1 based index, 0 means not enqueued
 } Node;
 
 // Returns the shortest path from start to end, avoiding obstacles on the grid

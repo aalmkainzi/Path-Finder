@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 #include "../include/path_finder.h"
 #include "../include/priority_queue.h"
 

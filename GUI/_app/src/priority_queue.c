@@ -79,16 +79,45 @@ static void sift_down(Priority_Queue *q)
     } while(least != old_parent);
 }
 
+void heapify(Priority_Queue *q, int at)
+{
+    int left  = left(at);
+    int right = right(at);
+    int min = at;
+    
+    if(left < q->size && q->data[left] < q->data[at])
+        min = left;
+    if(right < q->size && q->data[right] < q->data[at])
+        min = right;
+    
+    if(min != at)
+    {
+        Node *temp = q->data[min];
+        q->data[min] = q->data[at];
+        q->data[at] = temp;
+        
+        heapify(q, min);
+    }
+}
+
 void enqueue(Priority_Queue *q, Node *n)
 {
-    q->data[q->size] = n;
-    q->size++;
-    sift_up(q);
+    if(n->enqueued)
+    {
+        heapify(q, parent(n->enqueued - 1));
+    }
+    else
+    {
+        q->data[q->size] = n;
+        q->size++;
+        sift_up(q);
+    }
 }
 
 Node *dequeue(Priority_Queue *q)
 {
     Node *ret = q->data[0];
+    ret->enqueued = 0;
     q->data[0] = q->data[q->size - 1];
     q->size--;
     
