@@ -12,7 +12,7 @@ Steps to build on Linux:
 2. run `make`
 3. executable will be generated in `./_bin/Debug/` named `_app`
 
-Steps t build on Windows:
+Steps to build on Windows:
 1. run `premake-mingw.bat`
 2. run `make`
 3. executable will be generated in `./_bin/Debug/` named `_app`
