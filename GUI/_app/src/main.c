@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <string.h>
 #include <time.h>
 #include "../include/path_finder.h"
 #define STB_DS_IMPLEMENTATION
@@ -12,7 +11,7 @@
 #include "../libs/raygui.h"
 
 // this struct describes a mouse click on a grid cell
-typedef struct Cell_Click
+typedef struct
 {
     Loc loc;
     MouseButton mouse_button;
@@ -21,7 +20,7 @@ typedef struct Cell_Click
 
 // draws a grid given the top left point and the rows and columns
 // returns the cell that was clicked
-Cell_Click draw_grid(Vector2 topleft, int cols, int rows, Rectangle view);
+Cell_Click draw_grid(Vector2 topleft, int cols, int rows, Rectangle view, int panel_borderx);
 
 // grows/shrinks the obstacles grid according to the new rows/cols
 void resize_obstacles(bool ***obstacles, int cols, int rows);
@@ -33,10 +32,10 @@ bool *obstacles_2d_to_1d(bool **obstacles);
 void scroll_by_dragging_mouse(Cell_Click cell_click, Vector2 *scroll);
 
 // calls the shortest path algorithm and sets the path
-double set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end);
+double set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc end);
 
 // draws the path as green squares on the grid, storing the path cells in the `path_cells`
-void draw_path_and_set_cells(const Path *path, Loc start, Loc end, Loc *path_cells, char *cost_str, Vector2 topleft);
+void draw_path_and_set_cells(Path path, Loc start, Loc end, char *cost_str, Vector2 topleft);
 
 // draws the row/col spinners and updates the rows and cols
 bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols, bool ***obstacles);
@@ -53,8 +52,8 @@ int iclampf(float f, int min, int max);
 // a convinence macro used to clear the path (free and NULL it, set cost string to empty)
 #define clear_path() \
 do { \
-    free(path); \
-    path = NULL; \
+    free(path.locs); \
+    path = (Path){0}; \
     pop_up_open = false; \
     cost_str[0] = '\0'; \
 } while(0)
@@ -83,7 +82,8 @@ const int button_size = 64;
 const int button_pad = 50;
 
 // this enum represents whether the Start/End point selector is enabled
-enum {
+enum
+{
     NO_SELECT = 0,
     START = 1,
     END = 2
@@ -112,9 +112,8 @@ int main()
             obstacles[i][j] = true;
     }
     
-    // the path describes the directions from start to end
-    Path *path = NULL;
-    Loc *path_cells = NULL;
+    // the path describes the locations of the cells from start to end
+    Path path = { 0 };
     
     // this string will be displayed to show the path cost
     // "Cost: " => 6
@@ -128,7 +127,7 @@ int main()
     // '\0'     => 1
     char time_str[6 + 30 + 1] = "";
     
-    // represents the time taken by the shortest path algorithm to find the path
+    // represents the time taken by the shortest_path algorithm to find the path
     double time_taken = 0;
     
     // if true the pop-up window showing the cost and time taken will appear
@@ -283,7 +282,7 @@ int main()
         };
         
         // draw the grid and get the clicked cell
-        Cell_Click clicked_cell = draw_grid(grid_topleft, cols, rows, scroll_view);
+        Cell_Click clicked_cell = draw_grid(grid_topleft, cols, rows, scroll_view, scroll_panel.x);
         
         // checks whether a cell is clicked
         bool cell_is_clicked = !locs_eq(clicked_cell.loc, null_loc);
@@ -295,7 +294,7 @@ int main()
         
         draw_obstacles(obstacles, cols, rows, grid_topleft, scroll_view);
         
-        draw_path_and_set_cells(path, start, end, path_cells, cost_str, grid_topleft);
+        draw_path_and_set_cells(path, start, end, cost_str, grid_topleft);
         
         // draw the Start icon on the grid if within it
         if(within_grid(start, cols, rows))
@@ -392,7 +391,7 @@ int main()
             
             time_taken = set_path(&path, obstacles, cols, rows, start, end);
             pop_up_open = true;
-            if(!path)
+            if(path.locs == NULL)
             {
                 sprintf(cost_str, "No Path");
             }
@@ -418,7 +417,7 @@ int main()
         {
             case NO_SELECT:                
                 // since we're in normal cursor mode, the user should be able to click on the S/E on the grid
-                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT)
+                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && GetMouseX() >= scroll_panel.x)
                 {
                     if(locs_eq(clicked_cell.loc, start) && !clicked_cell.held)
                     {
@@ -435,7 +434,7 @@ int main()
                 GuiDrawIcon(220, GetMouseX() - (2 * cursor_icon_size), GetMouseY() - (2 * cursor_icon_size), cursor_icon_size, BLACK);
                 
                 // since we're in S cursor mode, clicking on a passable cell will put the Start point there
-                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x])
+                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x] && GetMouseX() >= scroll_panel.x)
                 {
                     start.x = clicked_cell.loc.x;
                     start.y = clicked_cell.loc.y;
@@ -454,7 +453,7 @@ int main()
                 GuiDrawIcon(221, GetMouseX() - (2 *cursor_icon_size), GetMouseY() - (2 * cursor_icon_size), cursor_icon_size, BLACK);
                 
                 // since we're in E cursor mode, clicking on a passable cell will put the End point there
-                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x])
+                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x] && GetMouseX() >= scroll_panel.x)
                 {
                     end.x = clicked_cell.loc.x;
                     end.y = clicked_cell.loc.y;
@@ -488,11 +487,11 @@ int main()
     }
     arrfree(obstacles);
     
-    free(path);
+    free(path.locs);
     CloseWindow();
 }
 
-Cell_Click draw_grid(Vector2 topleft, int cols, int rows, Rectangle view)
+Cell_Click draw_grid(Vector2 topleft, int cols, int rows, Rectangle view, int panel_borderx)
 {
     Cell_Click ret = {
         .loc  = null_loc,
@@ -528,7 +527,8 @@ Cell_Click draw_grid(Vector2 topleft, int cols, int rows, Rectangle view)
             };
             
             // color the hovered cell with SKYBLUE
-            DrawRectangleRec(hovered_cell, SKYBLUE);
+            if(mousex >= panel_borderx)
+                DrawRectangleRec(hovered_cell, SKYBLUE);
             
             bool l_held    = IsMouseButtonDown(MOUSE_BUTTON_LEFT);
             bool l_pressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
@@ -652,10 +652,10 @@ double diff_timespec(struct timespec time1, struct timespec time0) {
 }
 
 // calls the shortest path algorithm and sets the path
-double set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Loc end)
+double set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc end)
 {
     bool *obstacles1d = obstacles_2d_to_1d(obstacles);
-    free(*path);
+    free(path->locs);
     
     struct timespec before = { 0 }, after = { 0 };
     clock_gettime(CLOCK_REALTIME, &before);
@@ -668,64 +668,30 @@ double set_path(Path **path, bool **obstacles, int cols, int rows, Loc start, Lo
 }
 
 // draws the path as green squares on the grid, storing the path cells in the 'path_cells'
-void draw_path_and_set_cells(const Path *path, Loc start, Loc end, Loc *path_cells, char *cost_str, Vector2 topleft)
+void draw_path_and_set_cells(Path path, Loc start, Loc end, char *cost_str, Vector2 topleft)
 {
     // if a path exists, draw it on the grid
-    if(path)
+    if(path.locs != NULL)
     {
-        if(!path_cells)
+        for(int i = 0 ; i < path.nb ; i++)
         {
-            path_cells = calloc(path->nb + 1, sizeof(Loc));
-            Loc current = start;
-            for(int i = 0 ; i < path->nb ; current = next_loc(current, path->dirs[i]), i++)
-            {
-                // add the current cell to the path cells
-                path_cells[i] = current;
-                
-                // this rectangle represents the current cell in the path
-                Rectangle path_cell_rect = {
-                    .x = topleft.x + line_thickness + (current.x * (cell_size + line_thickness)),
-                    .y = topleft.y + line_thickness + (current.y * (cell_size + line_thickness)),
-                    .width  = cell_size,
-                    .height = cell_size
-                };
-                
-                // draw the path cell as GREEN
-                DrawRectangleRec(path_cell_rect, GREEN);
-            }
+            // current cell to draw on the grid
+            Loc current = path.locs[i];
             
-            // add to path cells and draw the End cell as green since it's not included in the previous loop
-            path_cells[path->nb] = end;
-            Rectangle end_rect = {
-                .x = topleft.x + line_thickness + (end.x * (cell_size + line_thickness)),
-                .y = topleft.y + line_thickness + (end.y * (cell_size + line_thickness)),
+            // this rectangle represents the coordinates and size of the cell
+            Rectangle path_cell_rect = {
+                .x = topleft.x + line_thickness + (current.x * (cell_size + line_thickness)),
+                .y = topleft.y + line_thickness + (current.y * (cell_size + line_thickness)),
                 .width  = cell_size,
                 .height = cell_size
             };
-            DrawRectangleRec(end_rect, GREEN);
-        }
-        else
-        {
-            for(int i = 0 ; i < path->nb + 1 ; i++)
-            {
-                // add the current cell to the path cells
-                Loc current = path_cells[i];
-                
-                // this rectangle represents the current cell in the path
-                Rectangle path_cell_rect = {
-                    .x = topleft.x + line_thickness + (current.x * (cell_size + line_thickness)),
-                    .y = topleft.y + line_thickness + (current.y * (cell_size + line_thickness)),
-                    .width  = cell_size,
-                    .height = cell_size
-                };
-                
-                // draw the path cell as GREEN
-                DrawRectangleRec(path_cell_rect, GREEN);
-            }
+            
+            // draw the path cell as GREEN
+            DrawRectangleRec(path_cell_rect, GREEN);
         }
         
         // set the path cost to the cost string
-        sprintf(cost_str, "Cost: %.2f", path->cost);
+        sprintf(cost_str, "Cost: %.2f", path.cost);
     }
 }
 

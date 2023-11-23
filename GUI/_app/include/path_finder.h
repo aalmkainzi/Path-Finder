@@ -12,14 +12,15 @@ grid[ loc.y * cols + loc.x ]
 (Loc){-1, -1}
 
 // Describes a point on a grid
-typedef struct Loc
+typedef struct
 {
     int x;
     int y;
 } Loc;
 
 // Represents the direction of the parent of a node
-typedef enum Parent_Direction {
+typedef enum 
+{
     UNKNOWN    = 0, // for unexpanded nodes
     NONE       = 1, // only for end, as it has no parent
     UP         = 2,
@@ -33,23 +34,25 @@ typedef enum Parent_Direction {
 } Parent_Direction;
 
 // Represents the path from start to end
-typedef struct Path {
+typedef struct 
+{
     float cost;
     int nb;
-    Parent_Direction dirs[];
+    Loc *locs;
 } Path;
 
 // Represents a single cell in the grid
-typedef struct Node {
-    Parent_Direction parent_dir;
+typedef struct 
+{
     float cost;
-    bool visited;
     int nb_steps;
     int enqueued; // 1 based index, 0 means not enqueued
-} Node;
+    Parent_Direction parent_dir;
+    bool visited;
+} Cell;
 
 // Returns the shortest path from start to end, avoiding obstacles on the grid
-Path* shortest_path(bool *grid, int cols, int rows, Loc start, Loc end);
+Path shortest_path(bool *grid, int cols, int rows, Loc start, Loc end);
 
 // Applies a direction to a given location
 // Retruns the resulting location

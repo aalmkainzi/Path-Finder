@@ -1,7 +1,5 @@
 #include <stdlib.h>
 #include <math.h>
-#include <string.h>
-#include <stdio.h>
 #include "../include/path_finder.h"
 #include "../include/priority_queue.h"
 
@@ -54,21 +52,21 @@ Loc next_loc(Loc loc, Parent_Direction direction)
     return loc;
 }
 
-// Turns a node pointer to a location in a 2D grid
-static Loc node_ptr_to_loc(Node *node, int cols, Node *grid)
+// Turns a cell pointer to a location in a 2D grid
+static Loc cell_ptr_to_loc(Cell *cell, int cols, Cell *grid)
 {
-    int node_index   = node - grid;
-    int node_index_x = node_index % cols;
-    int node_index_y = node_index / cols;
+    int cell_index   = cell - grid;
+    int cell_index_x = cell_index % cols;
+    int cell_index_y = cell_index / cols;
     
-    return (Loc){.x = node_index_x, .y = node_index_y};
+    return (Loc){.x = cell_index_x, .y = cell_index_y};
 }
 
-// Enqueues in the given priority queue the adjacenet nodes to the current node
-// Ignoring unpassable nodes, nodes that were already expanded, and nodes that are too expensive
-static void enqueue_unvisited_passable_adjacents_if_cheaper(Node *current, int cols, int rows, bool *obstacle_grid, Node *node_grid, Loc start, Priority_Queue *unexpanded)
+// Enqueues in the given priority queue the adjacenet cells to the current cell
+// Ignoring unpassable cells, cells that were already expanded, and cells that are too expensive
+static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Loc start, Priority_Queue *unexpanded)
 {
-    Loc current_loc = node_ptr_to_loc(current, cols, node_grid);
+    Loc current_loc = cell_ptr_to_loc(current, cols, cell_grid);
     
     Loc up         = (Loc){.x = current_loc.x,     .y = current_loc.y - 1};
     Loc right      = (Loc){.x = current_loc.x + 1, .y = current_loc.y};
@@ -103,11 +101,11 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Node *current, int c
     possible_directions |= ((possible_directions & CAN_DOWN) && (possible_directions & CAN_LEFT))  << 6; // down left
     possible_directions |= ((possible_directions & CAN_UP)   && (possible_directions & CAN_LEFT))  << 7; // up left
     
-    // an array of locations such that 'locs[i]' will be the location of the ith node to enqueue
+    // an array of locations such that 'locs[i]' will be the location of the ith cell to enqueue
     const Loc locs[8] = {up, right, down, left, up_right, down_right, down_left, up_left};
     
     // an array of directions such that 'opposite_dirs[dir]' will be the opposite of that direction
-    // used to get the parent of a node after it went 'dir'
+    // used to get the parent of a cell after it went 'dir'
     const Parent_Direction opposite_dirs[8] = {DOWN, LEFT, UP, RIGHT, DOWN_LEFT, UP_LEFT, UP_RIGHT, DOWN_RIGHT};
     
     // an array of costs such that 'step_costs[0..3]' which is the non-diagonal adjacents will be 1
@@ -122,76 +120,75 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Node *current, int c
         {
             float step_cost = step_costs[i];
             bool passable = grid_get_at(obstacle_grid, cols, locs[i]);
-            bool unvisited = !grid_get_at(node_grid, cols, locs[i]).visited;
-            bool cheaper_than_old_cost_or_unknown = grid_get_at(node_grid, cols, locs[i]).parent_dir == UNKNOWN || grid_get_at(node_grid, cols, locs[i]).cost > current->cost + step_cost;
-            bool cheaper_than_start = grid_get_at(node_grid, cols, start).parent_dir == UNKNOWN || grid_get_at(node_grid, cols, start).cost > current->cost + step_cost;
+            bool unvisited = !grid_get_at(cell_grid, cols, locs[i]).visited;
+            bool cheaper_than_old_cost_or_unknown = grid_get_at(cell_grid, cols, locs[i]).parent_dir == UNKNOWN || grid_get_at(cell_grid, cols, locs[i]).cost > current->cost + step_cost;
+            bool cheaper_than_start = grid_get_at(cell_grid, cols, start).parent_dir == UNKNOWN || grid_get_at(cell_grid, cols, start).cost > current->cost + step_cost;
             if(passable && unvisited && cheaper_than_old_cost_or_unknown && cheaper_than_start)
             {
-                // set the cost as the previous node cost + step_cost
-                grid_get_at(node_grid, cols, locs[i]).cost = current->cost + step_cost;
-                // set the new parent of the enqueued node
-                grid_get_at(node_grid, cols, locs[i]).parent_dir = opposite_dirs[i];
-                // set the number of steps it took to reach the node
-                grid_get_at(node_grid, cols, locs[i]).nb_steps = current->nb_steps + 1;
+                // set the cost as the previous cell cost + step_cost
+                grid_get_at(cell_grid, cols, locs[i]).cost = current->cost + step_cost;
+                // set the new parent of the enqueued cell
+                grid_get_at(cell_grid, cols, locs[i]).parent_dir = opposite_dirs[i];
+                // set the number of steps it took to reach the cell
+                grid_get_at(cell_grid, cols, locs[i]).nb_steps = current->nb_steps + 1;
                 
-                enqueue(unexpanded, &grid_get_at(node_grid, cols, locs[i]));
+                enqueue(unexpanded, &grid_get_at(cell_grid, cols, locs[i]));
             }
         }
     }
 }
 
-Path *shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
+Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
 {
     // if the start/end is not passable, return NULL
     if(!grid_get_at(obstacle_grid, cols, end) || !grid_get_at(obstacle_grid, cols, start))
     {
-        return NULL;
+        return (Path){0};
     }
     
-    // allocate for the node grid, setting the parents to UNKNOWN and enqueued to 0
-    Node *node_grid = (Node*) malloc(cols * rows * sizeof(Node));
-    
-    memset(node_grid, 0, cols * rows * sizeof(Node));
+    // allocate for the cell grid, setting the parents to UNKNOWN and enqueued to 0
+    Cell *cell_grid = (Cell*) calloc(cols * rows, sizeof(Cell));
     
     // the cost from end to end is 0, and end has no NONE parent
-    grid_get_at(node_grid, cols, end) = (Node){.parent_dir = NONE, .cost = 0, .visited = false, .nb_steps = 0};
+    grid_get_at(cell_grid, cols, end).parent_dir = NONE;
     
     Priority_Queue unexpanded = init_queue(cols * rows);
     
     // enqueue the end to the priority queue
-    enqueue(&unexpanded,&grid_get_at(node_grid, cols, end));
+    enqueue(&unexpanded, &grid_get_at(cell_grid, cols, end));
     
     while(unexpanded.size != 0)
     {
-        Node *current = dequeue(&unexpanded);
+        Cell *current = dequeue(&unexpanded);
         
         current->visited = true;
-        enqueue_unvisited_passable_adjacents_if_cheaper(current, cols, rows, obstacle_grid, node_grid, start, &unexpanded);
+        enqueue_unvisited_passable_adjacents_if_cheaper(current, cols, rows, obstacle_grid, cell_grid, start, &unexpanded);
     }
     
     // if the start point still has UNKNOWN parent, it means no path was found. Return NULL
-    if(grid_get_at(node_grid, cols, start).parent_dir == UNKNOWN)
+    if(grid_get_at(cell_grid, cols, start).parent_dir == UNKNOWN)
     {
         free(unexpanded.data);
-        free(node_grid);
-        return NULL;
+        free(cell_grid);
+        return (Path){0};
     }
     
     // allocate for a path, which is just a cost with an array of directions
-    Path *path = (Path*) malloc(sizeof(Path) + (sizeof(Parent_Direction) * grid_get_at(node_grid, cols, start).nb_steps));
-    path->nb = 0;
-    path->cost = grid_get_at(node_grid, cols, start).cost;
+    Path path = { 0 }; 
+    path.locs = (Loc*) malloc(sizeof(Loc) * (grid_get_at(cell_grid, cols, start).nb_steps + 1));
+    path.nb = grid_get_at(cell_grid, cols, start).nb_steps + 1;
+    path.cost = grid_get_at(cell_grid, cols, start).cost;
     
-    // fill the path with the directions from start to end
+    // fill the path with the locations of the cells in the path from start to end
     Loc current = start;
-    while(!locs_eq(current, end))
+    for(int i = 0 ; i < path.nb ; i++)
     {
-        path->dirs[path->nb++] = grid_get_at(node_grid, cols, current).parent_dir;
-        current = next_loc(current, grid_get_at(node_grid, cols, current).parent_dir);
+        path.locs[i] = current;
+        current = next_loc(current, grid_get_at(cell_grid, cols, current).parent_dir);
     }
     
     // cleanup
     free(unexpanded.data);
-    free(node_grid);
+    free(cell_grid);
     return path;
 }

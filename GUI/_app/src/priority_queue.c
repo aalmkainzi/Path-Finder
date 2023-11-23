@@ -9,27 +9,33 @@
 Priority_Queue init_queue(int cap)
 {
     Priority_Queue ret = {
-        .data = (Node**) calloc(cap, sizeof(Node*))
+        .data = (Cell**) calloc(cap, sizeof(Cell*))
     };
     
     return ret;
 }
 
-static void swap_nodes(Node **a, Node **b)
+static void swap_cells(Cell **a, Cell **b)
 {
-    Node *temp = *a;
+    // swapping the cells
+    Cell *temp = *a;
     *a = *b;
     *b = temp;
+    
+    // the cells indexes in the queue must also be swapped
+    int temp_index = (*a)->enqueued;
+    (*a)->enqueued = (*b)->enqueued;
+    (*b)->enqueued = temp_index;
 }
 
-// swaps the rightmost node with its parent iteratively until data structure is a proper min-heap
+// swaps the rightmost cell with its parent iteratively until data structure is a proper min-heap
 static void sift_up(Priority_Queue *q)
 {
     int current = q->size - 1;
     
     while(current != 0 && q->data[current]->cost < q->data[parent(current)]->cost)
     {
-        swap_nodes(&q->data[current], &q->data[parent(current)]);
+        swap_cells(&q->data[current], &q->data[parent(current)]);
         current = parent(current);
     }
     
@@ -38,7 +44,7 @@ static void sift_up(Priority_Queue *q)
 
 // compares parent with left and right children
 // returns the index of the smallest
-static int min_of_family(Node **arr, int size, int parent)
+static int min_of_family(Cell **arr, int size, int parent)
 {
     // parent has no children
     if(left(parent) >= size) 
@@ -75,7 +81,7 @@ static void sift_down(Priority_Queue *q)
     do
     {
         least = min_of_family(q->data, q->size, parent);
-        swap_nodes(&q->data[parent], &q->data[least]);
+        swap_cells(&q->data[parent], &q->data[least]);
         old_parent = parent;
         parent = least;
     } while(least != old_parent);
@@ -94,12 +100,12 @@ void heapify(Priority_Queue *q, int at)
     
     if(min != at)
     {
-        swap_nodes(&q->data[min], &q->data[at]);
+        swap_cells(&q->data[min], &q->data[at]);
         heapify(q, min);
     }
 }
 
-void enqueue(Priority_Queue *q, Node *n)
+void enqueue(Priority_Queue *q, Cell *n)
 {
     if(n->enqueued)
     {
@@ -113,9 +119,9 @@ void enqueue(Priority_Queue *q, Node *n)
     }
 }
 
-Node *dequeue(Priority_Queue *q)
+Cell *dequeue(Priority_Queue *q)
 {
-    Node *ret = q->data[0];
+    Cell *ret = q->data[0];
     ret->enqueued = 0;
     q->data[0] = q->data[q->size - 1];
     q->size--;
