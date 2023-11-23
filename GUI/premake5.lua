@@ -60,10 +60,14 @@ workspace (workspaceName)
 	defaultplatform ("x64")
 
     filter "configurations:Debug"
+        warnings "Extra"
+        sanitize { "Address" }
+        linkoptions { "-lasan" }
         defines { "DEBUG" }
         symbols "On"
 
     filter "configurations:Release"
+        warnings "Extra"
         optimize "Speed"
         flags { "LinkTimeOptimization" }
 
