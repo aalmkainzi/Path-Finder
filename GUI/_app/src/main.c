@@ -32,10 +32,11 @@ bool *obstacles_2d_to_1d(bool **obstacles);
 void scroll_by_dragging_mouse(Cell_Click cell_click, Vector2 *scroll);
 
 // calls the shortest path algorithm and sets the path
-double set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc end);
+// sets the cost and time strings to reflect the result of the algorithm
+void set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc end, char *cost_str, char *time_str);
 
-// draws the path as green squares on the grid, storing the path cells in the `path_cells`
-void draw_path_and_set_cells(Path path, char *cost_str, Vector2 topleft);
+// draws the path as green squares on the grid
+void draw_path(Path path, Vector2 topleft);
 
 // draws the row/col spinners and updates the rows and cols
 bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols);
@@ -126,9 +127,6 @@ int main()
     // "%.4lf"  => 30
     // '\0'     => 1
     char time_str[6 + 30 + 1] = "";
-    
-    // represents the time taken by the shortest_path algorithm to find the path
-    double time_taken = 0;
     
     // if true the pop-up window showing the cost and time taken will appear
     bool pop_up_open = false;
@@ -294,7 +292,7 @@ int main()
         
         draw_obstacles(obstacles, cols, rows, grid_topleft, scroll_view);
         
-        draw_path_and_set_cells(path, cost_str, grid_topleft);
+        draw_path(path, grid_topleft);
         
         // draw the Start icon on the grid if within it
         if(within_grid(start, cols, rows))
@@ -343,7 +341,6 @@ int main()
             GuiLabel(cost_label_bounds, cost_str);
             
             
-            sprintf(time_str, "Time: %.4lfs", time_taken);
             int time_label_width = GetTextWidth(time_str);
             
             Rectangle time_label_bounds = {
@@ -389,12 +386,8 @@ int main()
         {
             no_select();
             
-            time_taken = set_path(&path, obstacles, cols, rows, start, end);
+            set_path(&path, obstacles, cols, rows, start, end, cost_str, time_str);
             pop_up_open = true;
-            if(path.locs == NULL)
-            {
-                sprintf(cost_str, "No Path");
-            }
         }
         
         // setting the font for rows/cols spinners
@@ -652,7 +645,8 @@ double diff_timespec(struct timespec time1, struct timespec time0) {
 }
 
 // calls the shortest path algorithm and sets the path
-double set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc end)
+// sets the cost and time strings to reflect the result of the algorithm
+void set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc end, char *cost_str, char *time_str)
 {
     bool *obstacles1d = obstacles_2d_to_1d(obstacles);
     free(path->locs);
@@ -664,11 +658,27 @@ double set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc
     
     free(obstacles1d);
     
-    return diff_timespec(after, before);
+    double time_taken = diff_timespec(after, before);
+    
+    // set the time taken to the time string
+    sprintf(time_str, "Time: %.4lf", time_taken);
+    
+    // set the path cost to the cost string
+    // if no path found set it to "No Path"
+    if(path->locs != NULL)
+    {
+        sprintf(cost_str, "Cost: %.2f", path->cost);
+    }
+    else
+    {
+        sprintf(cost_str, "No Path");
+    }
+    
+    return ;
 }
 
 // draws the path as green squares on the grid, storing the path cells in the 'path_cells'
-void draw_path_and_set_cells(Path path, char *cost_str, Vector2 topleft)
+void draw_path(Path path, Vector2 topleft)
 {
     // if a path exists, draw it on the grid
     if(path.locs != NULL)
@@ -690,8 +700,7 @@ void draw_path_and_set_cells(Path path, char *cost_str, Vector2 topleft)
             DrawRectangleRec(path_cell_rect, GREEN);
         }
         
-        // set the path cost to the cost string
-        sprintf(cost_str, "Cost: %.2f", path.cost);
+
     }
 }
 
