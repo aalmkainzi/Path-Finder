@@ -463,7 +463,7 @@ int main()
         }
         
         // right click/hold will set/unset obstacles, as long as its not on Start/End
-        if(cell_is_clicked && !holding_same_obstacle_cell && clicked_cell.mouse_button == MOUSE_BUTTON_RIGHT && !locs_eq(clicked_cell.loc, start) && !locs_eq(clicked_cell.loc, end))
+        if(cell_is_clicked && !holding_same_obstacle_cell && clicked_cell.mouse_button == MOUSE_BUTTON_RIGHT && !locs_eq(clicked_cell.loc, start) && !locs_eq(clicked_cell.loc, end) && GetMouseX() >= scroll_panel.x)
         {
             obstacles[clicked_cell.loc.y][clicked_cell.loc.x] ^= 1; // set/unset obstacle
             clear_path();
@@ -660,10 +660,10 @@ void set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc e
     
     double time_taken = diff_timespec(after, before);
     
-    // set the time taken to the time string
+    // set the time string to the time taken
     sprintf(time_str, "Time: %.4lf", time_taken);
     
-    // set the path cost to the cost string
+    // set the cost string to the path cost
     // if no path found set it to "No Path"
     if(path->locs != NULL)
     {
@@ -673,8 +673,6 @@ void set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc e
     {
         sprintf(cost_str, "No Path");
     }
-    
-    return ;
 }
 
 // draws the path as green squares on the grid, storing the path cells in the 'path_cells'
@@ -699,8 +697,6 @@ void draw_path(Path path, Vector2 topleft)
             // draw the path cell as GREEN
             DrawRectangleRec(path_cell_rect, GREEN);
         }
-        
-
     }
 }
 
