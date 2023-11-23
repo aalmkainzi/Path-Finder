@@ -1,0 +1,3 @@
+- Prevent selecting S/E by clicking on their cell if mouse not over grid
+- Animate path drawing, pressing SPACE will draw it immediately
+- Embed the icon and style files into the binary
