@@ -173,7 +173,7 @@ Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
         return (Path){0};
     }
     
-    // allocate for a path, which is just a cost with an array of directions
+    // allocate for a path, which is just a cost with an array of locations
     Path path = { 0 }; 
     path.locs = (Loc*) malloc(sizeof(Loc) * (grid_get_at(cell_grid, cols, start).nb_steps + 1));
     path.nb = grid_get_at(cell_grid, cols, start).nb_steps + 1;
