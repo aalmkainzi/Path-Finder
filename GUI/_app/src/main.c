@@ -35,10 +35,10 @@ void scroll_by_dragging_mouse(Cell_Click cell_click, Vector2 *scroll);
 double set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc end);
 
 // draws the path as green squares on the grid, storing the path cells in the `path_cells`
-void draw_path_and_set_cells(Path path, Loc start, Loc end, char *cost_str, Vector2 topleft);
+void draw_path_and_set_cells(Path path, char *cost_str, Vector2 topleft);
 
 // draws the row/col spinners and updates the rows and cols
-bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols, bool ***obstacles);
+bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols);
 
 // draws the obstacles on the grid as red squares
 void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 topleft, Rectangle view);
@@ -294,7 +294,7 @@ int main()
         
         draw_obstacles(obstacles, cols, rows, grid_topleft, scroll_view);
         
-        draw_path_and_set_cells(path, start, end, cost_str, grid_topleft);
+        draw_path_and_set_cells(path, cost_str, grid_topleft);
         
         // draw the Start icon on the grid if within it
         if(within_grid(start, cols, rows))
@@ -402,7 +402,7 @@ int main()
         GuiSetFont(font);
         
         //int old_rows = rows, old_cols = cols;
-        bool changed_rows_cols = draw_spinners_and_update_rows_cols(r_spinner, c_spinner, &rows, &cols, &obstacles);
+        bool changed_rows_cols = draw_spinners_and_update_rows_cols(r_spinner, c_spinner, &rows, &cols);
         
         // resize the obstacles grid if rows/cols was changed
         if(changed_rows_cols)
@@ -668,7 +668,7 @@ double set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc
 }
 
 // draws the path as green squares on the grid, storing the path cells in the 'path_cells'
-void draw_path_and_set_cells(Path path, Loc start, Loc end, char *cost_str, Vector2 topleft)
+void draw_path_and_set_cells(Path path, char *cost_str, Vector2 topleft)
 {
     // if a path exists, draw it on the grid
     if(path.locs != NULL)
@@ -695,7 +695,7 @@ void draw_path_and_set_cells(Path path, Loc start, Loc end, char *cost_str, Vect
     }
 }
 
-bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols, bool ***obstacles)
+bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols)
 {
     static bool edit_rows = false;
     static bool edit_cols = false;
