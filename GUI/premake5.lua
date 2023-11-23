@@ -61,12 +61,18 @@ workspace (workspaceName)
 
     filter "configurations:Debug"
         warnings "Extra"
-        sanitize { "Address" }
-        linkoptions { "-lasan" }
+        if (string.lower(os.host()) == "linux") then
+            sanitize { "Address" }
+            linkoptions { "-lasan" }
+        end
         defines { "DEBUG" }
         symbols "On"
 
     filter "configurations:Release"
+        if (string.lower(os.host()) == "windows") then
+            symbols "On"
+            makesettings { "AR = gcc-ar" }
+        end
         warnings "Extra"
         optimize "Speed"
         flags { "LinkTimeOptimization" }
