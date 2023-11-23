@@ -148,7 +148,7 @@ Path *shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
         return NULL;
     }
     
-    // allocate for the node grid, setting the costs to INFINITY and the parents to UNKNOWN
+    // allocate for the node grid, setting the parents to UNKNOWN and enqueued to 0
     Node *node_grid = (Node*) malloc(cols * rows * sizeof(Node));
     
     memset(node_grid, 0, cols * rows * sizeof(Node));
