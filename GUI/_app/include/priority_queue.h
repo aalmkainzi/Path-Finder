@@ -6,8 +6,8 @@
 // a priority queue of Cell pointers
 typedef struct
 {
-    int size;
     Cell **data;
+    int size;
 } Priority_Queue;
 
 // initialize the Priority_Queue with 'cap' as the maximum capacity.

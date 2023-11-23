@@ -36,9 +36,9 @@ typedef enum
 // Represents the path from start to end
 typedef struct 
 {
+    Loc *locs;
     float cost;
     int nb;
-    Loc *locs;
 } Path;
 
 // Represents a single cell in the grid
