@@ -8,7 +8,10 @@
 #define STB_DS_IMPLEMENTATION
 #include "../libs/stb_ds.h"
 #define RAYGUI_IMPLEMENTATION
+#include "../include/iconset.rgi.h"
 #include "../libs/raygui.h"
+#include "../include/style_bluish.h"
+
 
 // this struct describes a mouse click on a grid cell
 typedef struct
@@ -236,10 +239,10 @@ int main()
     };
     
     // loading the style
-    GuiLoadStyle("../../style_bluish.rgs");
+    GuiLoadStyleBluish();
     
     // loading the icons
-    GuiLoadIcons("../../iconset.rgi", false);
+    // GuiLoadIcons("../../iconset.rgi", false);
     GuiSetIconScale(3);
     
     Font font = GuiGetFont();

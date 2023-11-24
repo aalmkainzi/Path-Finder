@@ -1329,9 +1329,10 @@ static unsigned int guiIcons[RAYGUI_ICON_MAX_ICONS*RAYGUI_ICON_DATA_ELEMENTS] = 
 };
 
 // NOTE: We keep a pointer to the icons array, useful to point to other sets if required
-static unsigned int *guiIconsPtr = guiIcons;
 
 #endif      // !RAYGUI_NO_ICONS && !RAYGUI_CUSTOM_ICONS
+
+static unsigned int *guiIconsPtr = guiIcons;
 
 #ifndef RAYGUI_ICON_SIZE
     #define RAYGUI_ICON_SIZE             0
