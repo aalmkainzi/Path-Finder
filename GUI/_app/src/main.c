@@ -31,6 +31,9 @@ bool *obstacles_2d_to_1d(bool **obstacles);
 // scrolls the grid if dragging it with mouse
 void scroll_by_dragging_mouse(Cell_Click cell_click, Vector2 *scroll);
 
+// moves the popup window if dragging it with mouse
+void move_popup_by_dragging_mouse(Rectangle *popup_bounds);
+
 // calls the shortest path algorithm and sets the path
 // sets the cost and time strings to reflect the result of the algorithm
 void set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc end, char *cost_str, char *time_str);
@@ -50,12 +53,14 @@ void clear_obstacles(bool ***obstacles, int cols, int rows);
 // clamps a float between 2 int values
 int iclampf(float f, int min, int max);
 
+bool within_rect(int x, int y, Rectangle rect);
+
 // a convinence macro used to clear the path (free and NULL it, set cost string to empty)
 #define clear_path() \
 do { \
     free(path.locs); \
     path = (Path){0}; \
-    pop_up_open = false; \
+    popup_open = false; \
     cost_str[0] = '\0'; \
 } while(0)
 
@@ -81,6 +86,14 @@ const int line_thickness = 2;
 int cell_size = 128;
 const int button_size = 64;
 const int button_pad = 50;
+
+// represent the mouse coordinates
+int mousex = 0;
+int mousey = 0;
+
+// represent the mouse coordinates of the previous frame
+int mousex_old = 0;
+int mousey_old = 0;
 
 // this enum represents whether the Start/End point selector is enabled
 enum
@@ -129,7 +142,7 @@ int main()
     char time_str[6 + 30 + 1] = "";
     
     // if true the pop-up window showing the cost and time taken will appear
-    bool pop_up_open = false;
+    bool popup_open = false;
     
     // the location of the last obstacle set, used to not set/unset the same cell when right click is held
     Loc last_obstacle_changed = null_loc;
@@ -214,6 +227,14 @@ int main()
         .height = r_spinner.height
     };
     
+    // represents the bounds of the pop-up window
+    Rectangle popup_bounds = {
+        .x = (GetScreenWidth() / 2.0f) - (512 / 2.0f),
+        .y = (GetScreenHeight() / 2.0f) - (256 / 2.0f),
+        .width  = 512,
+        .height = 256
+    };
+    
     // loading the style
     GuiLoadStyle("../../style_bluish.rgs");
     
@@ -227,6 +248,11 @@ int main()
     
     while(!WindowShouldClose())
     {
+        mousex_old = mousex;
+        mousey_old = mousey;
+        mousex = GetMouseX();
+        mousey = GetMouseY();
+        
         // setting the height for the buttons panel, it scales with window height
         buttons_panel.height = GetScreenHeight();
         
@@ -288,7 +314,8 @@ int main()
         // checks whether the same cell being held, useful for obstacle placing
         bool holding_same_obstacle_cell = cell_is_clicked && clicked_cell.held && locs_eq(clicked_cell.loc, last_obstacle_changed);
         
-        scroll_by_dragging_mouse(clicked_cell, &scroll);
+        if(!popup_open || ((mousex <= popup_bounds.x || mousex >= popup_bounds.x + popup_bounds.width) || (mousey <= popup_bounds.y || mousey >= popup_bounds.y + popup_bounds.height)))
+            scroll_by_dragging_mouse(clicked_cell, &scroll);
         
         draw_obstacles(obstacles, cols, rows, grid_topleft, scroll_view);
         
@@ -311,47 +338,6 @@ int main()
                 BLACK);
         
         GuiDrawRectangle(buttons_panel, 1, WHITE, WHITE);
-        
-        // if the pop-up window is open, draw it and the display the cost and time
-        if(pop_up_open)
-        {
-            font.baseSize = font_size_small;
-            GuiSetFont(font);
-            Rectangle popup_bounds = {
-                .x = (GetScreenWidth() / 2.0f) - (512 / 2.0f),
-                .y = (GetScreenHeight() / 2.0f) - (256 / 2.0f),
-                .width  = 512,
-                .height = 256
-            };
-            
-            pop_up_open = !GuiWindowBox(popup_bounds, "Result");
-            
-            // setting the font for the cost and time labels
-            font.baseSize = font_size_big;
-            GuiSetFont(font);
-            
-            int cost_label_width = GetTextWidth(cost_str);
-            Rectangle cost_label_bounds = {
-                .x = popup_bounds.x + (popup_bounds.width / 2) - (cost_label_width / 2.0f),
-                .y = popup_bounds.y + (popup_bounds.height / 2) - (button_size / 2.0f),
-                .width  = cost_label_width,
-                .height = 24
-            };
-            
-            GuiLabel(cost_label_bounds, cost_str);
-            
-            
-            int time_label_width = GetTextWidth(time_str);
-            
-            Rectangle time_label_bounds = {
-                .x = popup_bounds.x + (popup_bounds.width / 2) - (time_label_width / 2.0f),
-                .y = cost_label_bounds.y + cost_label_bounds.height + button_pad,
-                .width  = time_label_width,
-                .height = 24
-            };
-            
-            GuiLabel(time_label_bounds, time_str);
-        }
         
         // get whether any of the buttons was clicked
         bool find_clicked  = GuiButton(p_button, "#73#");
@@ -387,7 +373,7 @@ int main()
             no_select();
             
             set_path(&path, obstacles, cols, rows, start, end, cost_str, time_str);
-            pop_up_open = true;
+            popup_open = true;
         }
         
         // setting the font for rows/cols spinners
@@ -404,13 +390,50 @@ int main()
             clear_path();
         }
         
+        // if the pop-up window is open, draw it and the display the cost and time
+        if(popup_open)
+        {
+            move_popup_by_dragging_mouse(&popup_bounds);
+            
+            font.baseSize = font_size_small;
+            GuiSetFont(font);
+            
+            popup_open = !GuiWindowBox(popup_bounds, "Result");
+            
+            // setting the font for the cost and time labels
+            font.baseSize = font_size_big;
+            GuiSetFont(font);
+            
+            int cost_label_width = GetTextWidth(cost_str);
+            Rectangle cost_label_bounds = {
+                .x = popup_bounds.x + (popup_bounds.width / 2) - (cost_label_width / 2.0f),
+                .y = popup_bounds.y + (popup_bounds.height / 2) - (button_size / 2.0f),
+                .width  = cost_label_width,
+                .height = 24
+            };
+            
+            GuiLabel(cost_label_bounds, cost_str);
+            
+            
+            int time_label_width = GetTextWidth(time_str);
+            
+            Rectangle time_label_bounds = {
+                .x = popup_bounds.x + (popup_bounds.width / 2) - (time_label_width / 2.0f),
+                .y = cost_label_bounds.y + cost_label_bounds.height + button_pad,
+                .width  = time_label_width,
+                .height = 24
+            };
+            
+            GuiLabel(time_label_bounds, time_str);
+        }
+        
         // have the cursor be normal or an S or an E depending on the select mode
         const int cursor_icon_size = 4;
         switch(select_mode)
         {
             case NO_SELECT:                
                 // since we're in normal cursor mode, the user should be able to click on the S/E on the grid
-                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && GetMouseX() >= scroll_panel.x)
+                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && mousex >= scroll_panel.x && (!popup_open || !within_rect(mousex, mousey, popup_bounds)))
                 {
                     if(locs_eq(clicked_cell.loc, start) && !clicked_cell.held)
                     {
@@ -424,10 +447,10 @@ int main()
                 break;
             case START:
                 // turn cursor into an S
-                GuiDrawIcon(220, GetMouseX() - (2 * cursor_icon_size), GetMouseY() - (2 * cursor_icon_size), cursor_icon_size, BLACK);
+                GuiDrawIcon(220, mousex - (2 * cursor_icon_size), mousey - (2 * cursor_icon_size), cursor_icon_size, BLACK);
                 
                 // since we're in S cursor mode, clicking on a passable cell will put the Start point there
-                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x] && GetMouseX() >= scroll_panel.x)
+                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x] && mousex >= scroll_panel.x)
                 {
                     start.x = clicked_cell.loc.x;
                     start.y = clicked_cell.loc.y;
@@ -443,10 +466,10 @@ int main()
                 break;
             case END:
                 // turn cursor into an E
-                GuiDrawIcon(221, GetMouseX() - (2 *cursor_icon_size), GetMouseY() - (2 * cursor_icon_size), cursor_icon_size, BLACK);
+                GuiDrawIcon(221, mousex - (2 *cursor_icon_size), mousey - (2 * cursor_icon_size), cursor_icon_size, BLACK);
                 
                 // since we're in E cursor mode, clicking on a passable cell will put the End point there
-                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x] && GetMouseX() >= scroll_panel.x)
+                if(cell_is_clicked && clicked_cell.mouse_button == MOUSE_BUTTON_LEFT && !clicked_cell.held && obstacles[clicked_cell.loc.y][clicked_cell.loc.x] && mousex >= scroll_panel.x)
                 {
                     end.x = clicked_cell.loc.x;
                     end.y = clicked_cell.loc.y;
@@ -463,7 +486,7 @@ int main()
         }
         
         // right click/hold will set/unset obstacles, as long as its not on Start/End
-        if(cell_is_clicked && !holding_same_obstacle_cell && clicked_cell.mouse_button == MOUSE_BUTTON_RIGHT && !locs_eq(clicked_cell.loc, start) && !locs_eq(clicked_cell.loc, end) && GetMouseX() >= scroll_panel.x)
+        if(cell_is_clicked && !holding_same_obstacle_cell && clicked_cell.mouse_button == MOUSE_BUTTON_RIGHT && !locs_eq(clicked_cell.loc, start) && !locs_eq(clicked_cell.loc, end) && mousex >= scroll_panel.x)
         {
             obstacles[clicked_cell.loc.y][clicked_cell.loc.x] ^= 1; // set/unset obstacle
             clear_path();
@@ -498,9 +521,6 @@ Cell_Click draw_grid(Vector2 topleft, int cols, int rows, Rectangle view, int pa
         cols * (cell_size + line_thickness) + line_thickness,
         rows * (cell_size + line_thickness)
     };
-    
-    int mousex = GetMouseX();
-    int mousey = GetMouseY();
     
     // the x and y of the cell that is currently hovered by the mouse cursor
     int cellx = (mousex - topleft.x) / (cell_size + line_thickness);
@@ -625,17 +645,28 @@ bool *obstacles_2d_to_1d(bool **obstacles)
 // scrolls the grid if dragging it with mouse
 void scroll_by_dragging_mouse(Cell_Click cell_click, Vector2 *scroll)
 {
-    static int mousex_old = 0;
-    static int mousey_old = 0;
     // if a cell is held with left mouse button, scroll the grid by dragging it
-    int mousex = GetMouseX(), mousey = GetMouseY();
     if(!locs_eq(cell_click.loc, null_loc) && cell_click.held && cell_click.mouse_button == MOUSE_BUTTON_LEFT)
     {
         scroll->x += (mousex - mousex_old);
         scroll->y += (mousey - mousey_old);
     }
-    mousex_old = mousex;
-    mousey_old = mousey;
+}
+
+void move_popup_by_dragging_mouse(Rectangle *popup_bounds)
+{
+    int diffx = (mousex - mousex_old), diffy = (mousey - mousey_old);
+    if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) && mousex >= popup_bounds->x && mousex <= popup_bounds->x + popup_bounds->width && mousey >= popup_bounds->y && mousey <= popup_bounds->y + popup_bounds->height)
+    {
+        if((popup_bounds->x >= 0 || diffx > 0) && (popup_bounds->x + popup_bounds->width <= GetScreenWidth() || diffx < 0))
+        {
+            if((popup_bounds->y >= 0 || diffy > 0) && (popup_bounds->y + popup_bounds->height <= GetScreenHeight() || diffy < 0))
+            {
+                popup_bounds->x += diffx;
+                popup_bounds->y += diffy;
+            }
+        }
+    }
 }
 
 // returns the difference between two times as a double
@@ -732,8 +763,6 @@ bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner
     }
     
     // if mouse is hovering over spinner and scrolls up/down, the value should change
-    int mousex = GetMouseX();
-    int mousey = GetMouseY();
     float spinner_scroll = GetMouseWheelMoveV().y;
     
     if(mousex >= r_spinner.x && mousex <= r_spinner.x + r_spinner.width)
@@ -795,4 +824,9 @@ void clear_obstacles(bool ***obstacles, int cols, int rows)
 int iclampf(float f, int min, int max)
 {
     return f > max ? max : (f < min ? min : f);
+}
+
+bool within_rect(int x, int y, Rectangle rect)
+{
+    return (x >= rect.x && x <= rect.x + rect.width) && (y >= rect.y && y <= rect.y + rect.height);
 }
