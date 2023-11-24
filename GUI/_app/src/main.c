@@ -241,8 +241,7 @@ int main()
     // loading the style
     GuiLoadStyleBluish();
     
-    // loading the icons
-    // GuiLoadIcons("../../iconset.rgi", false);
+    // setting icons size
     GuiSetIconScale(3);
     
     Font font = GuiGetFont();
