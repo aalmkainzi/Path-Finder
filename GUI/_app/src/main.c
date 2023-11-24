@@ -655,18 +655,19 @@ void scroll_by_dragging_mouse(Cell_Click cell_click, Vector2 *scroll)
 
 void move_popup_by_dragging_mouse(Rectangle *popup_bounds)
 {
-    int diffx = (mousex - mousex_old), diffy = (mousey - mousey_old);
     if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) && mousex >= popup_bounds->x && mousex <= popup_bounds->x + popup_bounds->width && mousey >= popup_bounds->y && mousey <= popup_bounds->y + popup_bounds->height)
     {
-        if((popup_bounds->x >= 0 || diffx > 0) && (popup_bounds->x + popup_bounds->width <= GetScreenWidth() || diffx < 0))
-        {
-            if((popup_bounds->y >= 0 || diffy > 0) && (popup_bounds->y + popup_bounds->height <= GetScreenHeight() || diffy < 0))
-            {
-                popup_bounds->x += diffx;
-                popup_bounds->y += diffy;
-            }
-        }
+        popup_bounds->x += (mousex - mousex_old);
+        popup_bounds->y += (mousey - mousey_old);
     }
+    if(popup_bounds->x < 0)
+        popup_bounds->x = 0;
+    if(popup_bounds->x + popup_bounds->width > GetScreenWidth())
+        popup_bounds->x = GetScreenWidth() - popup_bounds->width;
+    if(popup_bounds->y < 0)
+        popup_bounds->y = 0;
+    if(popup_bounds->y + popup_bounds->height > GetScreenHeight())
+        popup_bounds->y = GetScreenHeight() - popup_bounds->height;
 }
 
 // returns the difference between two times as a double
