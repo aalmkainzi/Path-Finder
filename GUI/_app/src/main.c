@@ -486,7 +486,7 @@ int main()
         }
         
         // right click/hold will set/unset obstacles, as long as its not on Start/End
-        if(cell_is_clicked && !holding_same_obstacle_cell && clicked_cell.mouse_button == MOUSE_BUTTON_RIGHT && !locs_eq(clicked_cell.loc, start) && !locs_eq(clicked_cell.loc, end) && mousex >= scroll_panel.x)
+        if(cell_is_clicked && !holding_same_obstacle_cell && clicked_cell.mouse_button == MOUSE_BUTTON_RIGHT && !locs_eq(clicked_cell.loc, start) && !locs_eq(clicked_cell.loc, end) && mousex >= scroll_panel.x && (!popup_open || !within_rect(mousex, mousey, popup_bounds)))
         {
             obstacles[clicked_cell.loc.y][clicked_cell.loc.x] ^= 1; // set/unset obstacle
             clear_path();
