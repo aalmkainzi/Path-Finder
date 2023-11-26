@@ -3,6 +3,16 @@
 #include "../include/path_finder.h"
 #include "../include/priority_queue.h"
 
+#if defined(__clang__)
+#define unroll_loop(n) \
+_Pragma("clang loop unroll(full)")
+#elif defined(__GNUC__)
+#define unroll_loop(n) \
+_Pragma("GCC unroll " #n)
+#else
+#define unroll_loop(n)
+#endif
+
 bool locs_eq(Loc l1, Loc l2)
 {
     return l1.x == l2.x && l1.y == l2.y;
@@ -113,6 +123,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int c
     const float sqrt2 = sqrtf(2);
     const float step_costs[8] = {1, 1, 1, 1, sqrt2, sqrt2, sqrt2, sqrt2};
     
+    unroll_loop(8)
     for(int i = 0 ; i < 8 ; i++)
     {
         bool within_grid = (possible_directions & (1 << i));
