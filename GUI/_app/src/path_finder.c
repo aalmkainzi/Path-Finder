@@ -112,10 +112,7 @@ static void enqueue_unvisited_passable_adjacents(Cell *current, int cols, int ro
     // used to get the parent of a cell after it went 'dir'
     const Parent_Direction opposite_dirs[8] = {DOWN, LEFT, UP, RIGHT, DOWN_LEFT, UP_LEFT, UP_RIGHT, DOWN_RIGHT};
     
-    // an array of costs such that 'step_costs[0..3]' which is the non-diagonal adjacents will be 1
-    // while 'step_costs[4..7]' which is the diagonal adjacenets will be sqrt of 2
     const float sqrt2 = sqrtf(2);
-    const float step_costs[8] = {1, 1, 1, 1, sqrt2, sqrt2, sqrt2, sqrt2};
     
     // a macro that takse a direction and enqueues the cell it leads to, only if the cell is passable and unvisited
     #define enqueue_adjacent(i)                                                           \
