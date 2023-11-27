@@ -3,14 +3,6 @@
 #include "../include/path_finder.h"
 #include "../include/queue.h"
 
-// applies compiler hint to unroll a loop
-#if defined(__clang__)
-#define unroll_loop(n) \
-_Pragma("clang loop unroll(full)")
-#else
-#define unroll_loop(n)
-#endif
-
 // Returns true if l1 is the same location as l2
 bool locs_eq(Loc l1, Loc l2)
 {
