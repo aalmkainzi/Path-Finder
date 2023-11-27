@@ -76,7 +76,7 @@ static Loc cell_ptr_to_loc(Cell *cell, int cols, Cell *grid)
 
 // Enqueues in the given priority queue the adjacenet cells to the current cell
 // Ignoring unpassable cells, cells that were already expanded, and cells that are too expensive
-static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Loc start, Queue *unexpanded)
+static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Queue *unexpanded)
 {
     Loc current_loc = cell_ptr_to_loc(current, cols, cell_grid);
     
@@ -174,7 +174,7 @@ Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
     {
         Cell *current = dequeue(&unexpanded);
         
-        enqueue_unvisited_passable_adjacents_if_cheaper(current, cols, rows, obstacle_grid, cell_grid, start, &unexpanded);
+        enqueue_unvisited_passable_adjacents_if_cheaper(current, cols, rows, obstacle_grid, cell_grid, &unexpanded);
     }
     
     // if the start point still has UNKNOWN parent, it means no path was found. Return NULL
