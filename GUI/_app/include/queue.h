@@ -1,5 +1,6 @@
 #include "path_finder.h"
 
+// a Queue of Cell pointers, 
 typedef struct
 {
     Cell **data;

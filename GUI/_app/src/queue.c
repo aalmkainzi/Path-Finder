@@ -14,7 +14,7 @@ Queue init_queue(int cap)
     return ret;
 }
 
-void maybe_shift_queue(Queue *q)
+static void maybe_shift_queue(Queue *q)
 {
     if(q->start + q->size >= q->cap)
     {
@@ -37,5 +37,3 @@ Cell *dequeue(Queue* q)
     q->start++;
     return ret;
 }
-
-
