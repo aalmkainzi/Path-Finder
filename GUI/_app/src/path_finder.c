@@ -1,14 +1,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include "../include/path_finder.h"
-#include "../include/priority_queue.h"
+#include "../include/queue.h"
 
 #if defined(__clang__)
 #define unroll_loop(n) \
 _Pragma("clang loop unroll(full)")
-#elif defined(__GNUC__)
-#define unroll_loop(n) \
-_Pragma("GCC unroll " #n)
 #else
 #define unroll_loop(n)
 #endif
@@ -74,7 +71,7 @@ static Loc cell_ptr_to_loc(Cell *cell, int cols, Cell *grid)
 
 // Enqueues in the given priority queue the adjacenet cells to the current cell
 // Ignoring unpassable cells, cells that were already expanded, and cells that are too expensive
-static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Loc start, Priority_Queue *unexpanded)
+static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Loc start, Queue *unexpanded)
 {
     Loc current_loc = cell_ptr_to_loc(current, cols, cell_grid);
     
@@ -161,18 +158,17 @@ Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
     Cell *cell_grid = (Cell*) calloc(cols * rows, sizeof(Cell));
     
     // the cost from end to end is 0, and end has no NONE parent
-    grid_get_at(cell_grid, cols, end).parent_dir = NONE;
+    grid_get_at(cell_grid, cols, end) = (Cell){.parent_dir = NONE, .visited = true};
     
-    Priority_Queue unexpanded = init_queue(cols * rows);
+    Queue unexpanded = init_queue(cols * rows);
     
     // enqueue the end to the priority queue
     enqueue(&unexpanded, &grid_get_at(cell_grid, cols, end));
     
-    while(unexpanded.size != 0)
+    while(unexpanded.size != 0 && !grid_get_at(cell_grid, cols, start).visited)
     {
         Cell *current = dequeue(&unexpanded);
         
-        current->visited = true;
         enqueue_unvisited_passable_adjacents_if_cheaper(current, cols, rows, obstacle_grid, cell_grid, start, &unexpanded);
     }
     
