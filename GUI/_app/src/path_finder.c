@@ -74,8 +74,8 @@ static Loc cell_ptr_to_loc(Cell *cell, int cols, Cell *grid)
     return (Loc){.x = cell_index_x, .y = cell_index_y};
 }
 
-// Enqueues in the given priority queue the adjacenet cells to the current cell
-// Ignoring unpassable cells, cells that were already expanded, and cells that are too expensive
+// Enqueues in the given queue the adjacenet cells to the current cell
+// Ignoring unpassable cells and cells that were already visited
 static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Queue *unexpanded)
 {
     Loc current_loc = cell_ptr_to_loc(current, cols, cell_grid);
@@ -167,7 +167,7 @@ Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
     
     Queue unexpanded = init_queue(cols * rows);
     
-    // enqueue the end to the priority queue
+    // enqueue the end
     enqueue(&unexpanded, &grid_get_at(cell_grid, cols, end));
     
     while(unexpanded.size != 0 && !grid_get_at(cell_grid, cols, start).visited)
