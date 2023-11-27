@@ -9,8 +9,11 @@ typedef struct
     int start;
 } Queue;
 
+// initilizes a queue with a maximum capcity
 Queue init_queue(int cap);
 
+// add a cell pointer to the back of the queue
 void enqueue(Queue* q, Cell *cell);
 
+// remove and return the front of the queue
 Cell *dequeue(Queue* q);

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+// initilizes a queue with a maximum capcity
 Queue init_queue(int cap)
 {
     Queue ret = {
@@ -14,6 +15,7 @@ Queue init_queue(int cap)
     return ret;
 }
 
+// shift the queue back if capacity reached
 static void maybe_shift_queue(Queue *q)
 {
     if(q->start + q->size >= q->cap)
@@ -23,6 +25,7 @@ static void maybe_shift_queue(Queue *q)
     }
 }
 
+// add a cell pointer to the back of the queue
 void enqueue(Queue* q, Cell *cell)
 {
     maybe_shift_queue(q);
@@ -30,6 +33,7 @@ void enqueue(Queue* q, Cell *cell)
     q->size++;
 }
 
+// remove and return the front of the queue
 Cell *dequeue(Queue* q)
 {
     Cell *ret = q->data[q->start];
