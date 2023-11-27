@@ -6,9 +6,6 @@
 #if defined(__clang__)
 #define unroll_loop(n) \
 _Pragma("clang loop unroll(full)")
-#elif defined(__GNUC__)
-#define unroll_loop(n) \
-_Pragma("GCC unroll " #n)
 #else
 #define unroll_loop(n)
 #endif
