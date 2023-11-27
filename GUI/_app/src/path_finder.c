@@ -3,6 +3,7 @@
 #include "../include/path_finder.h"
 #include "../include/queue.h"
 
+// applies compiler hint to unroll a loop
 #if defined(__clang__)
 #define unroll_loop(n) \
 _Pragma("clang loop unroll(full)")
@@ -10,16 +11,20 @@ _Pragma("clang loop unroll(full)")
 #define unroll_loop(n)
 #endif
 
+// Returns true if l1 is the same location as l2
 bool locs_eq(Loc l1, Loc l2)
 {
     return l1.x == l2.x && l1.y == l2.y;
 }
 
+// Returns true if location is within the grid, false otherwise
 bool within_grid(Loc loc, int cols, int rows)
 {
     return (!(loc.x < 0 || loc.x >= cols) && !(loc.y < 0 || loc.y >= rows));
 }
 
+// Applies a direction to a given location
+// Retruns the resulting location
 Loc next_loc(Loc loc, Parent_Direction direction)
 {
     switch(direction)
@@ -129,9 +134,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int c
             float step_cost = step_costs[i];
             bool passable = grid_get_at(obstacle_grid, cols, locs[i]);
             bool unvisited = !grid_get_at(cell_grid, cols, locs[i]).visited;
-            bool cheaper_than_old_cost_or_unknown = grid_get_at(cell_grid, cols, locs[i]).parent_dir == UNKNOWN || grid_get_at(cell_grid, cols, locs[i]).cost > current->cost + step_cost;
-            bool cheaper_than_start = grid_get_at(cell_grid, cols, start).parent_dir == UNKNOWN || grid_get_at(cell_grid, cols, start).cost > current->cost + step_cost;
-            if(passable && unvisited && cheaper_than_old_cost_or_unknown && cheaper_than_start)
+            if(passable && unvisited)
             {
                 // set the cost as the previous cell cost + step_cost
                 grid_get_at(cell_grid, cols, locs[i]).cost = current->cost + step_cost;
@@ -139,6 +142,8 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int c
                 grid_get_at(cell_grid, cols, locs[i]).parent_dir = opposite_dirs[i];
                 // set the number of steps it took to reach the cell
                 grid_get_at(cell_grid, cols, locs[i]).nb_steps = current->nb_steps + 1;
+                // set the cell as visited so that it doesn't get enqueued again
+                grid_get_at(cell_grid, cols, locs[i]).visited = true;
                 
                 enqueue(unexpanded, &grid_get_at(cell_grid, cols, locs[i]));
             }
