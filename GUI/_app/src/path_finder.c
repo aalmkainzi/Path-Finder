@@ -125,30 +125,42 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int c
     const float sqrt2 = sqrtf(2);
     const float step_costs[8] = {1, 1, 1, 1, sqrt2, sqrt2, sqrt2, sqrt2};
     
-    unroll_loop(8)
-    for(int i = 0 ; i < 8 ; i++)
-    {
-        bool within_grid = (possible_directions & (1 << i));
-        if(within_grid)
-        {
-            float step_cost = step_costs[i];
-            bool passable = grid_get_at(obstacle_grid, cols, locs[i]);
-            bool unvisited = !grid_get_at(cell_grid, cols, locs[i]).visited;
-            if(passable && unvisited)
-            {
-                // set the cost as the previous cell cost + step_cost
-                grid_get_at(cell_grid, cols, locs[i]).cost = current->cost + step_cost;
-                // set the new parent of the enqueued cell
-                grid_get_at(cell_grid, cols, locs[i]).parent_dir = opposite_dirs[i];
-                // set the number of steps it took to reach the cell
-                grid_get_at(cell_grid, cols, locs[i]).nb_steps = current->nb_steps + 1;
-                // set the cell as visited so that it doesn't get enqueued again
-                grid_get_at(cell_grid, cols, locs[i]).visited = true;
-                
-                enqueue(unexpanded, &grid_get_at(cell_grid, cols, locs[i]));
-            }
-        }
-    }
+    // a macro that takse a direction and enqueues the cell it leads to, only if the cell is passable and unvisited
+    #define enqueue_adjacent(i)                                                           \
+    do {                                                                                  \
+        const int adj = i - 2;                                                            \
+        bool within_grid = (possible_directions & (1 << adj));                            \
+        if(within_grid)                                                                   \
+        {                                                                                 \
+            const float step_cost = adj >= UP_RIGHT ? sqrt2 : 1;                          \
+            bool passable = grid_get_at(obstacle_grid, cols, locs[adj]);                  \
+            bool unvisited = !grid_get_at(cell_grid, cols, locs[adj]).visited;            \
+            if(passable && unvisited)                                                     \
+            {                                                                             \
+                /* set the cost as the previous cell cost + step_cost */                  \
+                grid_get_at(cell_grid, cols, locs[adj]).cost = current->cost + step_cost; \
+                /* set the new parent of the enqueued cell */                             \
+                grid_get_at(cell_grid, cols, locs[adj]).parent_dir = opposite_dirs[adj];  \
+                /* set the number of steps it took to reach the cell */                   \
+                grid_get_at(cell_grid, cols, locs[adj]).nb_steps = current->nb_steps + 1; \
+                /* set the cell as visited so that it doesn't get enqueued again */       \
+                grid_get_at(cell_grid, cols, locs[adj]).visited = true;                   \
+                                                                                          \
+                enqueue(unexpanded, &grid_get_at(cell_grid, cols, locs[adj]));            \
+            }                                                                             \
+        }                                                                                 \
+    } while(0)
+    
+    enqueue_adjacent(UP);
+    enqueue_adjacent(RIGHT);
+    enqueue_adjacent(DOWN);
+    enqueue_adjacent(LEFT);
+    enqueue_adjacent(UP_RIGHT);
+    enqueue_adjacent(DOWN_RIGHT);
+    enqueue_adjacent(DOWN_LEFT);
+    enqueue_adjacent(UP_LEFT);
+    
+    #undef enqueue_child
 }
 
 Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
