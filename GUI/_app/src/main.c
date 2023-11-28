@@ -685,14 +685,13 @@ void set_path(Path *path, bool **obstacles, int cols, int rows, Loc start, Loc e
     bool *obstacles1d = obstacles_2d_to_1d(obstacles);
     free(path->locs);
     
-    struct timespec before = { 0 }, after = { 0 };
-    clock_gettime(CLOCK_REALTIME, &before);
+    double before = GetTime();
     *path = shortest_path(obstacles1d, cols, rows, start, end);
-    clock_gettime(CLOCK_REALTIME, &after);
+    double after = GetTime();
     
     free(obstacles1d);
     
-    double time_taken = diff_timespec(after, before);
+    double time_taken = after - before;
     
     // set the time string to the time taken
     sprintf(time_str, "Time: %.4lf", time_taken);

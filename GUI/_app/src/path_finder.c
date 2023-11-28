@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "../include/path_finder.h"
 #include "../include/queue.h"
 
@@ -162,12 +163,25 @@ Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
     }
     
     // allocate for the cell grid, setting the parents to UNKNOWN and enqueued to 0
-    Cell *cell_grid = (Cell*) calloc(cols * rows, sizeof(Cell));
+    static Cell *cell_grid = NULL;
+    static int old_rows = 0;
+    static int old_cols = 0;
+
+    if(old_rows < rows || old_cols < cols)
+    {
+        cell_grid = realloc(cell_grid, rows * cols * sizeof(Cell));
+        memset(cell_grid, 0, rows * cols * sizeof(Cell));
+    }
+    
+    old_rows = rows;
+    old_cols = cols;
     
     // the cost from end to end is 0, and end has no NONE parent
     grid_get_at(cell_grid, cols, end) = (Cell){.parent_dir = NONE, .visited = true};
     
-    Queue unexpanded = init_queue(cols * rows);
+    static Queue unexpanded = { 0 };
+    
+    init_queue(&unexpanded, rows * cols);
     
     // enqueue the end
     enqueue(&unexpanded, &grid_get_at(cell_grid, cols, end));
@@ -182,8 +196,8 @@ Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
     // if the start point still has UNKNOWN parent, it means no path was found. Return NULL
     if(grid_get_at(cell_grid, cols, start).parent_dir == UNKNOWN)
     {
-        free(unexpanded.data);
-        free(cell_grid);
+        // free(unexpanded.data);
+        // free(cell_grid);
         return (Path){0};
     }
     
@@ -202,7 +216,7 @@ Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
     }
     
     // cleanup
-    free(unexpanded.data);
-    free(cell_grid);
+    // free(unexpanded.data);
+    // free(cell_grid);
     return path;
 }

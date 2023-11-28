@@ -10,7 +10,7 @@ typedef struct
 } Queue;
 
 // initilizes a queue with a maximum capcity
-Queue init_queue(int cap);
+void init_queue(Queue *q, int cap);
 
 // add a cell pointer to the back of the queue
 void enqueue(Queue* q, Cell *cell);

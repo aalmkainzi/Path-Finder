@@ -3,16 +3,15 @@
 #include <string.h>
 
 // initilizes a queue with a maximum capcity
-Queue init_queue(int cap)
+void init_queue(Queue *q, int cap)
 {
-    Queue ret = {
-        .data = (Cell**) calloc(cap, sizeof(Cell*)),
-        .start = 0,
-        .size  = 0,
-        .cap = cap
-    };
-    
-    return ret;
+    if(cap > q->cap)
+    {
+        q->data = realloc(q->data, cap * sizeof(Cell*));
+    }
+    q->cap   = cap;
+    q->size  = 0;
+    q->start = 0;
 }
 
 // shift the queue back if capacity reached
