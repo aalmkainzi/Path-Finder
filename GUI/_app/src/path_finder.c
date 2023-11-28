@@ -2,8 +2,8 @@
 #include <math.h>
 #include <string.h>
 #include "../include/path_finder.h"
-#include "../include/queue.h"
-
+//#include "../include/queue.h"
+#include "../include/priority_queue.h"
 // Returns true if l1 is the same location as l2
 bool locs_eq(Loc l1, Loc l2)
 {
@@ -69,7 +69,7 @@ static Loc cell_ptr_to_loc(Cell *cell, int cols, Cell *grid)
 
 // Enqueues in the given queue the adjacenet cells to the current cell
 // Ignoring unpassable cells and cells that were already visited
-static void enqueue_unvisited_passable_adjacents(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Queue *unexpanded)
+static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Loc start, Priority_Queue *unexpanded)
 {
     Loc current_loc = cell_ptr_to_loc(current, cols, cell_grid);
     
@@ -81,7 +81,6 @@ static void enqueue_unvisited_passable_adjacents(Cell *current, int cols, int ro
     Loc down_right = (Loc){.x = current_loc.x + 1, .y = current_loc.y + 1};
     Loc down_left  = (Loc){.x = current_loc.x - 1, .y = current_loc.y + 1};
     Loc up_left    = (Loc){.x = current_loc.x - 1, .y = current_loc.y - 1};
-    
     // flags that can be represented by a single bit
     enum {
         CAN_UP         = 1,
@@ -125,7 +124,13 @@ static void enqueue_unvisited_passable_adjacents(Cell *current, int cols, int ro
             const float step_cost = adj >= UP_RIGHT ? sqrt2 : 1;                          \
             bool passable = grid_get_at(obstacle_grid, cols, locs[adj]);                  \
             bool unvisited = !grid_get_at(cell_grid, cols, locs[adj]).visited;            \
-            if(passable && unvisited)                                                     \
+            bool cheaper_than_old_cost_or_unknown =                                       \
+            (grid_get_at(cell_grid, cols, locs[adj]).parent_dir == UNKNOWN ||             \
+            grid_get_at(cell_grid, cols, locs[adj]).cost > current->cost + step_cost);    \
+            bool cheaper_than_start =                                                     \
+            (grid_get_at(cell_grid, cols, start).parent_dir == UNKNOWN                    \
+            || grid_get_at(cell_grid, cols, start).cost > current->cost + step_cost);     \
+            if(passable && unvisited && cheaper_than_old_cost_or_unknown && cheaper_than_start) \
             {                                                                             \
                 /* set the cost as the previous cell cost + step_cost */                  \
                 grid_get_at(cell_grid, cols, locs[adj]).cost = current->cost + step_cost; \
@@ -133,8 +138,6 @@ static void enqueue_unvisited_passable_adjacents(Cell *current, int cols, int ro
                 grid_get_at(cell_grid, cols, locs[adj]).parent_dir = opposite_dirs[adj];  \
                 /* set the number of steps it took to reach the cell */                   \
                 grid_get_at(cell_grid, cols, locs[adj]).nb_steps = current->nb_steps + 1; \
-                /* set the cell as visited so that it doesn't get enqueued again */       \
-                grid_get_at(cell_grid, cols, locs[adj]).visited = true;                   \
                                                                                           \
                 enqueue(unexpanded, &grid_get_at(cell_grid, cols, locs[adj]));            \
             }                                                                             \
@@ -170,34 +173,34 @@ Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
     if(old_rows < rows || old_cols < cols)
     {
         cell_grid = realloc(cell_grid, rows * cols * sizeof(Cell));
-        memset(cell_grid, 0, rows * cols * sizeof(Cell));
     }
+    
+    memset(cell_grid, 0, rows * cols * sizeof(Cell));
     
     old_rows = rows;
     old_cols = cols;
     
     // the cost from end to end is 0, and end has no NONE parent
-    grid_get_at(cell_grid, cols, end) = (Cell){.parent_dir = NONE, .visited = true};
+    grid_get_at(cell_grid, cols, end).parent_dir = NONE;
     
-    static Queue unexpanded = { 0 };
+    static Priority_Queue unexpanded = { 0 };
     
     init_queue(&unexpanded, rows * cols);
     
     // enqueue the end
     enqueue(&unexpanded, &grid_get_at(cell_grid, cols, end));
     
-    while(unexpanded.size != 0 && !grid_get_at(cell_grid, cols, start).visited)
+    while(unexpanded.size != 0)
     {
         Cell *current = dequeue(&unexpanded);
+        current->visited = true;
         
-        enqueue_unvisited_passable_adjacents(current, cols, rows, obstacle_grid, cell_grid, &unexpanded);
+        enqueue_unvisited_passable_adjacents_if_cheaper(current, cols, rows, obstacle_grid, cell_grid, start, &unexpanded);
     }
     
     // if the start point still has UNKNOWN parent, it means no path was found. Return NULL
     if(grid_get_at(cell_grid, cols, start).parent_dir == UNKNOWN)
     {
-        // free(unexpanded.data);
-        // free(cell_grid);
         return (Path){0};
     }
     
@@ -215,8 +218,5 @@ Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
         current = next_loc(current, grid_get_at(cell_grid, cols, current).parent_dir);
     }
     
-    // cleanup
-    // free(unexpanded.data);
-    // free(cell_grid);
     return path;
 }

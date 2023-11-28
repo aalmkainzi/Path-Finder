@@ -46,6 +46,7 @@ typedef struct
 {
     float cost;
     int nb_steps;
+    int enqueued; // 1 based index, 0 means not enqueued
     Parent_Direction parent_dir;
     bool visited;
 } Cell;
