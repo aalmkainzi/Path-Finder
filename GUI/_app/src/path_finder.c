@@ -2,8 +2,8 @@
 #include <math.h>
 #include <string.h>
 #include "../include/path_finder.h"
-//#include "../include/queue.h"
 #include "../include/priority_queue.h"
+
 // Returns true if l1 is the same location as l2
 bool locs_eq(Loc l1, Loc l2)
 {
@@ -68,7 +68,7 @@ static Loc cell_ptr_to_loc(Cell *cell, int cols, Cell *grid)
 }
 
 // Enqueues in the given queue the adjacenet cells to the current cell
-// Ignoring unpassable cells and cells that were already visited
+// Ignoring unpassable cells and cells that were already visited and cells that are too expensive
 static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Loc start, Priority_Queue *unexpanded)
 {
     Loc current_loc = cell_ptr_to_loc(current, cols, cell_grid);
@@ -114,7 +114,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int c
     
     const float sqrt2 = sqrtf(2);
     
-    // a macro that takse a direction and enqueues the cell it leads to, only if the cell is passable and unvisited
+    // a macro that takse a direction and enqueues the cell it leads to, only if the cell is passable and unvisited and not too expensive
     #define enqueue_adjacent(i)                                                           \
     do {                                                                                  \
         const int adj = i - 2;                                                            \
@@ -144,7 +144,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int c
         }                                                                                 \
     } while(0)
     
-    // enqueuing the adjacents if passable and unvisited
+    // enqueuing the passable and unvisited adjacents if cheaper
     enqueue_adjacent(UP);
     enqueue_adjacent(RIGHT);
     enqueue_adjacent(DOWN);
