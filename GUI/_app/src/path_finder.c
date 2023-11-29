@@ -121,7 +121,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(const Cell *current,
         bool within_grid = (possible_directions & (1 << adj));                            \
         if(within_grid)                                                                   \
         {                                                                                 \
-            const float step_cost = adj >= UP_RIGHT ? sqrt2 : 1;                          \
+            const float step_cost = i >= UP_RIGHT ? sqrt2 : 1;                          \
             bool passable = grid_get_at(obstacle_grid, cols, locs[adj]);                  \
             bool unvisited = !grid_get_at(cell_grid, cols, locs[adj]).visited;            \
             bool cheaper_than_old_cost_or_unknown =                                       \
