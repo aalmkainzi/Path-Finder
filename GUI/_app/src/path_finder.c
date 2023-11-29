@@ -58,7 +58,7 @@ Loc next_loc(Loc loc, Parent_Direction direction)
 }
 
 // Turns a cell pointer to a location in a 2D grid
-static Loc cell_ptr_to_loc(Cell *cell, int cols, Cell *grid)
+static Loc cell_ptr_to_loc(const Cell *cell, int cols, const Cell *grid)
 {
     int cell_index   = cell - grid;
     int cell_index_x = cell_index % cols;
@@ -69,7 +69,7 @@ static Loc cell_ptr_to_loc(Cell *cell, int cols, Cell *grid)
 
 // Enqueues in the given queue the adjacenet cells to the current cell
 // Ignoring unpassable cells and cells that were already visited and cells that are too expensive
-static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int cols, int rows, bool *obstacle_grid, Cell *cell_grid, Loc start, Priority_Queue *unexpanded)
+static void enqueue_unvisited_passable_adjacents_if_cheaper(const Cell *current, int cols, int rows, const bool *obstacle_grid, Cell *cell_grid, Loc start, Priority_Queue *unexpanded)
 {
     Loc current_loc = cell_ptr_to_loc(current, cols, cell_grid);
     
@@ -157,7 +157,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(Cell *current, int c
     #undef enqueue_child
 }
 
-Path shortest_path(bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
+Path shortest_path(const bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
 {
     // if the start/end is not passable, return NULL
     if(!grid_get_at(obstacle_grid, cols, end) || !grid_get_at(obstacle_grid, cols, start))
