@@ -121,7 +121,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(const Cell *current,
         bool within_grid = (possible_directions & (1 << adj));                            \
         if(within_grid)                                                                   \
         {                                                                                 \
-            const float step_cost = i >= UP_RIGHT ? sqrt2 : 1;                          \
+            const float step_cost = i >= UP_RIGHT ? sqrt2 : 1;                            \
             bool passable = grid_get_at(obstacle_grid, cols, locs[adj]);                  \
             bool unvisited = !grid_get_at(cell_grid, cols, locs[adj]).visited;            \
             bool cheaper_than_old_cost_or_unknown =                                       \
@@ -165,16 +165,17 @@ Path shortest_path(const bool *obstacle_grid, int cols, int rows, Loc start, Loc
         return (Path){0};
     }
     
-    // allocate for the cell grid, setting the parents to UNKNOWN and enqueued to 0
     static Cell *cell_grid = NULL;
     static int old_rows = 0;
     static int old_cols = 0;
-
+    
+    // reallocate for the cell grid if it's not big enough
     if(old_rows < rows || old_cols < cols)
     {
         cell_grid = realloc(cell_grid, rows * cols * sizeof(Cell));
     }
     
+    // setting the parents to UNKNOWN and enqueued to 0
     memset(cell_grid, 0, rows * cols * sizeof(Cell));
     
     old_rows = rows;

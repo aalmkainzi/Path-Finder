@@ -73,6 +73,7 @@ static int min_of_family(Cell **arr, int size, int parent)
     }
 }
 
+
 // swaps parent with least of children iteratively until the data structure is a proper min-heap
 static void sift_down(Priority_Queue *q)
 {
