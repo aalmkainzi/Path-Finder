@@ -52,7 +52,7 @@ typedef struct
 } Cell;
 
 // Returns the shortest path from start to end, avoiding obstacles on the grid
-Path shortest_path(bool *grid, int cols, int rows, Loc start, Loc end);
+Path shortest_path(const bool *grid, int cols, int rows, Loc start, Loc end);
 
 // Applies a direction to a given location
 // Retruns the resulting location
