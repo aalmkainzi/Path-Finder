@@ -190,6 +190,7 @@ Path shortest_path(const bool *obstacle_grid, int cols, int rows, Loc start, Loc
     // enqueue the end
     enqueue(&unexpanded, &grid_get_at(cell_grid, cols, end));
     
+    // until the queue is emptied, keep dequeuing
     while(unexpanded.size != 0)
     {
         Cell *current = dequeue(&unexpanded);
@@ -211,11 +212,11 @@ Path shortest_path(const bool *obstacle_grid, int cols, int rows, Loc start, Loc
     path.cost = grid_get_at(cell_grid, cols, start).cost;
     
     // fill the path with the locations of the cells in the path from start to end
-    Loc current = start;
+    Loc loc_iter = start;
     for(int i = 0 ; i < path.nb ; i++)
     {
-        path.locs[i] = current;
-        current = next_loc(current, grid_get_at(cell_grid, cols, current).parent_dir);
+        path.locs[i] = loc_iter;
+        loc_iter = next_loc(loc_iter, grid_get_at(cell_grid, cols, loc_iter).parent_dir);
     }
     
     return path;
