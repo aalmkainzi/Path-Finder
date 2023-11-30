@@ -657,11 +657,13 @@ void scroll_by_dragging_mouse(Cell_Click cell_click, Vector2 *scroll)
 
 void move_popup_by_dragging_mouse(Rectangle *popup_bounds)
 {
-    if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) && mousex >= popup_bounds->x && mousex <= popup_bounds->x + popup_bounds->width && mousey >= popup_bounds->y && mousey <= popup_bounds->y + popup_bounds->height)
+    if(IsMouseButtonDown(MOUSE_BUTTON_LEFT) && within_rect(mousex, mousey, *popup_bounds))
     {
         popup_bounds->x += (mousex - mousex_old);
         popup_bounds->y += (mousey - mousey_old);
     }
+    
+    // snap back to being on frame if pop up is not visible
     if(popup_bounds->x < 0)
         popup_bounds->x = 0;
     if(popup_bounds->x + popup_bounds->width > GetScreenWidth())
@@ -767,13 +769,11 @@ bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner
     // if mouse is hovering over spinner and scrolls up/down, the value should change
     float spinner_scroll = GetMouseWheelMoveV().y;
     
-    if(mousex >= r_spinner.x && mousex <= r_spinner.x + r_spinner.width)
-        if(mousey >= r_spinner.y && mousey <= r_spinner.y + r_spinner.height)
-            *rows += iclampf(spinner_scroll, -1, 1);
+    if(within_rect(mousex, mousey, r_spinner))
+        *rows += iclampf(spinner_scroll, -1, 1);
     
-    if(mousex >= c_spinner.x && mousex <= c_spinner.x + c_spinner.width)
-        if(mousey >= c_spinner.y && mousey <= c_spinner.y + c_spinner.height)
-            *cols += iclampf(spinner_scroll, -1, 1);
+    if(within_rect(mousex, mousey, c_spinner))
+        *cols += iclampf(spinner_scroll, -1, 1);
     
     bool changed_dims = *rows != old_rows || *cols != old_cols;
     if(changed_dims)
