@@ -12,7 +12,6 @@
 #include "../libs/raygui.h"
 #include "../include/style_bluish.h"
 
-
 // this struct describes a mouse click on a grid cell
 typedef struct
 {
@@ -46,6 +45,9 @@ void draw_path(Path path, Vector2 topleft);
 
 // draws the row/col spinners and updates the rows and cols
 bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner, int *rows, int *cols);
+
+// draws the row/col spinners without updating values
+bool draw_spinners(Rectangle r_spinner, Rectangle c_spinner, int rows, int cols);
 
 // draws the obstacles on the grid as red squares
 void draw_obstacles(bool **obstacles, int cols, int rows, Vector2 topleft, Rectangle view);
@@ -341,13 +343,13 @@ int main()
         
         GuiDrawRectangle(buttons_panel, 1, WHITE, WHITE);
         
-        // get whether any of the buttons was clicked
+        // get whether any of the buttons were clicked
         bool find_clicked  = GuiButton(p_button, "#73#");
         bool clear_clicked = GuiButton(x_button, "#113#");
         bool start_clicked = GuiButton(s_button, "#220#");
         bool end_clicked   = GuiButton(e_button, "#221#");
         
-        if(clear_clicked)
+        if(clear_clicked && !popup_open)
         {
             // if Start/End is selected, unselect
             no_select();
@@ -359,12 +361,12 @@ int main()
             clear_path();
         }
         
-        if(start_clicked)
+        if(start_clicked && !popup_open)
         {
             set_select_mode(START);
         }
         
-        if(end_clicked)
+        if(end_clicked && !popup_open)
         {
             set_select_mode(END);
         }
@@ -383,7 +385,7 @@ int main()
         GuiSetFont(font);
         
         //int old_rows = rows, old_cols = cols;
-        bool changed_rows_cols = draw_spinners_and_update_rows_cols(r_spinner, c_spinner, &rows, &cols);
+        bool changed_rows_cols = popup_open ? draw_spinners(r_spinner, c_spinner, rows, cols) : draw_spinners_and_update_rows_cols(r_spinner, c_spinner, &rows, &cols);
         
         // resize the obstacles grid if rows/cols was changed
         if(changed_rows_cols)
@@ -785,6 +787,15 @@ bool draw_spinners_and_update_rows_cols(Rectangle r_spinner, Rectangle c_spinner
     }
     
     return changed_dims;
+}
+
+bool draw_spinners(Rectangle r_spinner, Rectangle c_spinner, int rows, int cols)
+{
+    // drawing the spinners
+    GuiSpinner(r_spinner, "Rows ", &rows, 1, INT_MAX, false);
+    GuiSpinner(c_spinner, "Cols ", &cols, 1, INT_MAX, false);
+    
+    return false;
 }
 
 // draws the obstacles on the grid as red squares
