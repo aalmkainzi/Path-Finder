@@ -154,7 +154,7 @@ static void enqueue_unvisited_passable_adjacents_if_cheaper(const Cell *current,
     enqueue_adjacent(DOWN_LEFT);
     enqueue_adjacent(UP_LEFT);
     
-    #undef enqueue_child
+    #undef enqueue_adjacent
 }
 
 Path shortest_path(const bool *obstacle_grid, int cols, int rows, Loc start, Loc end)
