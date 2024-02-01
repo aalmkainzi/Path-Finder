@@ -1,7 +1,6 @@
 # Path-Finder GUI
 A graphical program for visualizing the path finding algorithm
 
-**Requires OpenGL**
 ## Building
 To build the project you need either:
 * Any C compiler on Linux (tested with GCC)
