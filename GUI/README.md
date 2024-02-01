@@ -26,3 +26,6 @@ Steps to build on Windows:
 * Scrolling on the Cols spinner or clicking the arrow buttons will increase/decrease the cols
 * Pressing - will zoom out
 * Pressing = will zoom in
+
+![alt text](https://github.com/aalmkainzi/Path-Finder/blob/main/GUI/screenshot.PNG)
+
